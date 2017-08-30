@@ -4,14 +4,37 @@ import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.util.DiscordException;
 
+import java.io.IOException;
+
 public class Main {
     public static void main(String[] args){
-        IDiscordClient client = createClient ("token", false);
+        Config cfg;
+        try{
+            cfg = new Config();
+        }catch (IOException e){
+            System.err.println(e.getMessage());
+            return;
+        }
+        String token = cfg.getToken();
+
+        IDiscordClient client = createClient (token);
+
+        if(client!=null){
+            client.getDispatcher().registerListener(new Events());
+        }else{
+            System.err.println("Client is null");
+        }
 
     }
-    private static IDiscordClient createClient(String token, boolean login){
+    private static IDiscordClient createClient(String token/*, boolean login*/){
         ClientBuilder cBuilder = new ClientBuilder().withToken(token);
         try{
+            return cBuilder.login();
+        }catch (DiscordException e){
+            e.printStackTrace();
+            return null;
+        }
+        /*try{
             if(login){
                 return cBuilder.login();
             }else{
@@ -20,6 +43,6 @@ public class Main {
         }catch (DiscordException e){
             e.printStackTrace();
             return null;
-        }
+        }*/
     }
 }
