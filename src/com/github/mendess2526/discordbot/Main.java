@@ -8,15 +8,16 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args){
-        Config cfg;
+        /*Config cfg;
         try{
             cfg = new Config();
         }catch (IOException e){
-            System.err.println(e.getMessage());
+            System.err.println("Can't find file " + e.getMessage());
             return;
         }
         String token = cfg.getToken();
-
+        */
+        String token = "lul";
         IDiscordClient client = createClient (token);
 
         if(client!=null){
