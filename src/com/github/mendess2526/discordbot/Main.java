@@ -8,7 +8,7 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args){
-        /*Config cfg;
+        Config cfg;
         try{
             cfg = new Config();
         }catch (IOException e){
@@ -16,8 +16,7 @@ public class Main {
             return;
         }
         String token = cfg.getToken();
-        */
-        String token = "lul";
+
         IDiscordClient client = createClient (token);
 
         if(client!=null){
@@ -25,7 +24,6 @@ public class Main {
         }else{
             System.err.println("Client is null");
         }
-
     }
     private static IDiscordClient createClient(String token/*, boolean login*/){
         ClientBuilder cBuilder = new ClientBuilder().withToken(token);
@@ -35,15 +33,5 @@ public class Main {
             e.printStackTrace();
             return null;
         }
-        /*try{
-            if(login){
-                return cBuilder.login();
-            }else{
-                return cBuilder.build();
-            }
-        }catch (DiscordException e){
-            e.printStackTrace();
-            return null;
-        }*/
     }
 }

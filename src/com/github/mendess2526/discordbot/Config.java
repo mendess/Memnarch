@@ -1,20 +1,35 @@
 package com.github.mendess2526.discordbot;
 
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import org.ini4j.Wini;
+
+import java.io.File;
 import java.io.IOException;
 
+@SuppressWarnings("WeakerAccess")
 public class Config {
     private String token;
 
     public Config() throws IOException {
-        FileReader fr = new FileReader("settings.txt");
-        BufferedReader textReader = new BufferedReader(fr);
-        this.token = textReader.readLine();
 
+        LoggerService.log("Reading from Ini",LoggerService.INFO);
+        Wini iniFile;
+        try{
+            iniFile = new Wini(new File("./settings.ini"));
+        }catch (IOException e){
+            LoggerService.log(e.getMessage(), LoggerService.ERROR);
+            return;
+        }
+        try{
+            this.token = iniFile.get("connection","token",String.class);
+        }catch (Exception e){
+            LoggerService.log(e.getMessage(),LoggerService.ERROR);
+            return;
+        }
+        LoggerService.log("ini read!",LoggerService.SUCC);
     }
-    public String getToken(){
+
+    public String getToken() {
         return this.token;
     }
 }
