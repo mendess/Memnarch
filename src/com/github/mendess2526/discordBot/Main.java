@@ -1,23 +1,37 @@
-package com.github.mendess2526.discordBot;
+package com.github.mendess2526.discordbot;
 
+import sx.blah.discord.api.ClientBuilder;
+import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.util.DiscordException;
 
+import java.io.IOException;
 
 public class Main {
+    public static void main(String[] args){
+        Config cfg;
+        try{
+            cfg = new Config();
+        }catch (IOException e){
+            System.err.println("Can't find file " + e.getMessage());
+            return;
+        }
+        String token = cfg.getToken();
 
-    public static void main(String[] args) {
+        IDiscordClient client = createClient (token);
 
-        IDiscordClient client = new ClientBuilder().withToken("MzUyMzk5Mjg1NzcxNDM2MDMy.DIgk-w.wgedGSP0lsMz88i0TX3pvXmFMGs");
-
-        try {
-            if (login) {
-                return clientBuilder.login();
-            } else {
-                return clientBuilder.build();
-            }
-        } catch (DiscordExeption e) {
+        if(client!=null){
+            client.getDispatcher().registerListener(new Events());
+        }else{
+            System.err.println("Client is null");
+        }
+    }
+    private static IDiscordClient createClient(String token/*, boolean login*/){
+        ClientBuilder cBuilder = new ClientBuilder().withToken(token);
+        try{
+            return cBuilder.login();
+        }catch (DiscordException e){
             e.printStackTrace();
             return null;
         }
-        
     }
 }

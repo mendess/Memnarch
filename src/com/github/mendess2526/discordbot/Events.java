@@ -13,10 +13,13 @@ public class Events implements IListener {
         }
     }
     private void handleMessageReceived(MessageReceivedEvent event) {
-        final String message = event.getMessage().getContent();
+        String command[] = event.getMessage().getContent().toUpperCase().split("\\s");
 
-        if(message.toUpperCase().equals("!HI")){
-            RequestBuffer.request(() -> event.getChannel().sendMessage(message));
+        if(command[0].equals("!HI")){
+            RequestBuffer.request(() -> event.getChannel().sendMessage(command[0]));
+        }
+        if(command[0].equals("!ROLECHANNEL")){
+            RoleChannels.handle(command, event);
         }
     }
 
