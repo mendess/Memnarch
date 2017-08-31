@@ -22,7 +22,7 @@ public class Main {
         if(client!=null){
             client.getDispatcher().registerListener(new Events());
         }else{
-            System.err.println("Client is null");
+            LoggerService.log("Client is null!",LoggerService.ERROR);
         }
     }
     private static IDiscordClient createClient(String token/*, boolean login*/){
