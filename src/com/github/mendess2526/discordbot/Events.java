@@ -12,14 +12,16 @@ public class Events implements IListener {
         if(event instanceof MessageReceivedEvent){
             handleMessageReceived((MessageReceivedEvent) event);
         }
-        /*if(event instanceof ReactionEvent){
+        if(event instanceof ReactionEvent){
             handleReactionEvent((ReactionEvent) event);
-        }*/
+        }
     }
 
-    /*private void handleReactionEvent(ReactionEvent event) {
-
-    }*/
+    private void handleReactionEvent(ReactionEvent event) {
+        if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
+            RoleChannels.join(event);
+        }
+    }
 
     private void handleMessageReceived(MessageReceivedEvent event) {
         String command[] = event.getMessage().getContent().toUpperCase().split("\\s");
@@ -31,7 +33,7 @@ public class Events implements IListener {
             RoleChannels.handle(command, event);
         }
         if(command[0].equals(BOT_PREFIX + "JOIN")){
-            RoleChannels.join(event,0);
+            RoleChannels.showJoinableChannels(event.getGuild(),event.getChannel(),event.getAuthor());
         }
     }
 
