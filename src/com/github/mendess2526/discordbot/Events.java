@@ -1,9 +1,12 @@
 package com.github.mendess2526.discordbot;
 
+import com.vdurmont.emoji.Emoji;
+import com.vdurmont.emoji.EmojiParser;
 import sx.blah.discord.api.events.Event;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.api.events.IListener;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.obj.IReaction;
 import sx.blah.discord.util.RequestBuffer;
 
 public class Events implements IListener {
@@ -13,13 +16,21 @@ public class Events implements IListener {
             handleMessageReceived((MessageReceivedEvent) event);
         }
         if(event instanceof ReactionEvent){
-            handleReactionEvent((ReactionEvent) event);
+            if(((ReactionEvent) event).getReaction().getUserReacted(event.getClient().getOurUser()) &&
+                    !((ReactionEvent) event).getUser().equals(event.getClient().getOurUser())){
+                handleReactionEvent((ReactionEvent) event);
+            }
         }
     }
 
     private void handleReactionEvent(ReactionEvent event) {
-        if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
+        if(event.getReaction().getUnicodeEmoji().getAliases().get(0).equals("x")){
+            LoggerService.log(event.getUser().getName()+" reacted to the \"no more channels\" message with :"+event.getReaction().getUnicodeEmoji().getAliases().get(0)+":",LoggerService.INFO);
+            event.getMessage().delete();
+        }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
             RoleChannels.join(event);
+        }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to leave!")){
+            RoleChannels.leave(event);
         }
     }
 
@@ -34,6 +45,9 @@ public class Events implements IListener {
         }
         if(command[0].equals(BOT_PREFIX + "JOIN")){
             RoleChannels.showJoinableChannels(event.getGuild(),event.getChannel(),event.getAuthor());
+        }
+        if(command[0].equals(BOT_PREFIX + "LEAVE")){
+            RoleChannels.showLeavableChannels(event.getGuild(),event.getChannel(),event.getAuthor());
         }
     }
 
