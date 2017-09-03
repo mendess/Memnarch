@@ -9,6 +9,8 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.Reactio
 import sx.blah.discord.handle.obj.IReaction;
 import sx.blah.discord.util.RequestBuffer;
 
+import java.util.Arrays;
+
 public class Events implements IListener {
     private final static String BOT_PREFIX = "|";
 
@@ -37,7 +39,7 @@ public class Events implements IListener {
 
     private void handleMessageReceived(MessageReceivedEvent event) {
         String command[] = event.getMessage().getContent().toUpperCase().split("\\s");
-
+        LoggerService.log("Command: "+ Arrays.toString(command),LoggerService.INFO);
         if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")){
             RequestBuffer.request(() -> event.getMessage().addReaction(":white_check_mark:")).get();
             RequestBuffer.request(() -> event.getMessage().addReaction(":x:")).get();
@@ -46,6 +48,7 @@ public class Events implements IListener {
             RequestBuffer.request(() -> event.getChannel().sendMessage("Hello, minion!"));
         }
         if(command[0].equals(BOT_PREFIX + "ROLECHANNEL")){
+            LoggerService.log("Executing a rolechannel command",LoggerService.INFO);
             RoleChannels.handle(command, event);
         }
         if(command[0].equals(BOT_PREFIX + "JOIN")){

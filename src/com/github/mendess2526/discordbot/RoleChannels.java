@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class RoleChannels {
     static final String NEW = "NEW";
     static final String DELETE = "DELETE";
+    static final String SET_ALL = "SETALL";
 
     static final int JOIN = 0;
     static final int LEAVE = 1;
@@ -31,6 +32,7 @@ public class RoleChannels {
         if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)){
             RequestBuffer.request(() -> event.getChannel().sendMessage("You don't have permission to use that command :("));
         }else{
+            LoggerService.log("Command: "+command[1],LoggerService.INFO);
             switch (command[1]){
                 case NEW:
                     IChannel ch = newChannel(command[2], event.getGuild());
@@ -45,8 +47,25 @@ public class RoleChannels {
                 case DELETE:
                     deleteChannel(command[2], event);
                     break;
+                case SET_ALL:
+                    setAll(event);
+                    break;
+                default:
+                    LoggerService.log("Not a valid command",LoggerService.ERROR);
+                    break;
             }
         }
+    }
+
+    private static void setAll(MessageReceivedEvent event) {
+        List<IChannel> chList = event.getGuild().getChannels();
+        EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
+        EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
+        chList.forEach(c -> {
+            RequestBuffer.request(() -> c.changeTopic("PRIVATE CHANNEL: "+c.getName())).get();
+            RequestBuffer.request(() -> c.overrideUserPermissions(event.getGuild().getClient().getOurUser(),readMessages,noPermits)).get();
+            RequestBuffer.request(() -> event.getChannel().sendMessage("changed topic of "+c.getName()));
+        });
     }
 
     private static void deleteChannel(String name, MessageReceivedEvent event) {
@@ -94,6 +113,7 @@ public class RoleChannels {
         boolean success = false;
         int count = 0;
         while (!success && count<10){
+            RequestBuffer.request(() -> ch.overrideUserPermissions(guild.getClient().getOurUser(),readMessages,noPermits));
             RequestBuffer.request(() -> ch.overrideRolePermissions(everyone,noPermits,readMessages)).get();
             success = !ch.getModifiedPermissions(everyone).contains(Permissions.READ_MESSAGES);
             if(success){
