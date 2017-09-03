@@ -60,8 +60,19 @@ public class RoleChannels {
             return;
         }
         ch = event.getGuild().getChannelByID(id);
-        LoggerService.log("Name of the channel to delete "+ch.getName(),LoggerService.INFO);
-        RequestBuffer.request(ch::delete);
+        String[] topic;
+        try{
+            topic = ch.getTopic().split(":");
+        }catch (NullPointerException e){
+            topic = new String[]{"NOT"};
+        }
+        if(topic[0].equals("PRIVATE CHANNEL")){
+            LoggerService.log("Name of the channel to delete "+ch.getName(),LoggerService.INFO);
+            RequestBuffer.request(ch::delete);
+        }else {
+            LoggerService.log(ch.getName()+" is not a Role Channel",LoggerService.INFO);
+            RequestBuffer.request(() -> event.getChannel().sendMessage(ch.getName()+" is not a Private Channel, I can't delete it"));
+        }
     }
 
     private static IChannel newChannel(String name, IGuild guild) {

@@ -10,7 +10,8 @@ import sx.blah.discord.handle.obj.IReaction;
 import sx.blah.discord.util.RequestBuffer;
 
 public class Events implements IListener {
-    private final static String BOT_PREFIX = "!";
+    private final static String BOT_PREFIX = "|";
+
     public void handle(Event event) {
         if(event instanceof MessageReceivedEvent){
             handleMessageReceived((MessageReceivedEvent) event);
@@ -37,6 +38,10 @@ public class Events implements IListener {
     private void handleMessageReceived(MessageReceivedEvent event) {
         String command[] = event.getMessage().getContent().toUpperCase().split("\\s");
 
+        if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")){
+            RequestBuffer.request(() -> event.getMessage().addReaction(":white_check_mark:")).get();
+            RequestBuffer.request(() -> event.getMessage().addReaction(":x:")).get();
+        }
         if(command[0].equals(BOT_PREFIX + "HI")){
             RequestBuffer.request(() -> event.getChannel().sendMessage("Hello, minion!"));
         }

@@ -15,16 +15,16 @@ public class LoggerService {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         switch (type) {
             case LoggerService.INFO:
-                message = "INFO - " + message;
+                message = " INFO - " + message;
                 break;
             case LoggerService.ERROR:
-                message = "ERROR - " + message;
+                message = " ERROR - " + message;
                 break;
             case LoggerService.SUCC:
-                message = "SUCC - " + message;
+                message = " SUCC - " + message;
                 break;
             default:
-                message = "XXX - " + message;
+                message = " XXX - " + message;
                 break;
         }
         message = sdf.format(new Date()) + message;
@@ -51,5 +51,6 @@ public class LoggerService {
                 break;
         }
         System.out.println(message);
+        //System.err.println(message);
     }
 }
