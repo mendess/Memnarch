@@ -12,7 +12,7 @@ public class Main {
         try{
             cfg = new Config();
         }catch (IOException e){
-            System.err.println("Can't find file " + e.getMessage());
+            LoggerService.log("Can't find file " + e.getMessage(),LoggerService.ERROR);
             return;
         }
         String token = cfg.getToken();
@@ -22,10 +22,10 @@ public class Main {
         if(client!=null){
             client.getDispatcher().registerListener(new Events());
         }else{
-            LoggerService.log("Client is null!",LoggerService.ERROR);
+            LoggerService.log("Client is null! Maybe you didn't add the token to settings.ini?",LoggerService.ERROR);
         }
     }
-    private static IDiscordClient createClient(String token/*, boolean login*/){
+    private static IDiscordClient createClient(String token){
         ClientBuilder cBuilder = new ClientBuilder().withToken(token);
         try{
             return cBuilder.login();
