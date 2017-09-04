@@ -32,10 +32,10 @@ public class LoggerService {
     }
 
     private static void logToConsole(String message, int type) {
-        final String ANSI_RESET = "\u001B[0m";
-        final String ANSI_RED = "\u001B[31m";
-        final String ANSI_GREEN = "\u001B[32m";
-        final String ANSI_CYAN = "\u001B[36m";
+        final String ANSI_RESET = " \u001B[0m ";
+        final String ANSI_RED = " \u001B[31m ";
+        final String ANSI_GREEN = " \u001B[32m ";
+        final String ANSI_CYAN = " \u001B[36m ";
 
         switch (type) {
             case LoggerService.INFO:
@@ -51,6 +51,5 @@ public class LoggerService {
                 break;
         }
         System.out.println(message);
-        //System.err.println(message);
     }
 }

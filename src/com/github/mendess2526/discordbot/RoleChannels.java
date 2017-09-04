@@ -21,7 +21,7 @@ public class RoleChannels {
 
     static final String[] NUMBERS = {":one:",":two:",":three:",":four:",":five:",":six:"};
 
-    private static Map<String,Command> commandMap = new HashMap<>();
+    public static Map<String,Command> commandMap = new HashMap<>();
 
     static {
         commandMap.put("NEW",(event, args) -> {
@@ -42,12 +42,16 @@ public class RoleChannels {
 
 
     // Making Channels
-    public static void handle(List<String> args, MessageReceivedEvent event){
+    public static void handle(MessageReceivedEvent event, List<String> args){
 
         if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("You don't have permission to use that command :("));
+            RequestBuffer.request(() -> event.getChannel().sendMessage("You don't have permission to use that command"));
         }else{
-            commandMap.get(args.get(0)).runCommand(event,args);
+            try{
+                commandMap.get(args.get(0)).runCommand(event,args);
+            }catch (IndexOutOfBoundsException e){
+                help(event.getChannel());
+            }
         }
     }
 
@@ -77,7 +81,7 @@ public class RoleChannels {
         try {
             guild.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) ->
                     !ch.getModifiedPermissions(everyone).contains(Permissions.READ_MESSAGES)
-                            && ch.getModifiedPermissions(ourUser).contains(Permissions.READ_MESSAGES),2,TimeUnit.SECONDS);
+                            && ch.getModifiedPermissions(ourUser).contains(Permissions.READ_MESSAGES),10,TimeUnit.SECONDS);
         }catch (InterruptedException e) {
             LoggerService.log("Interrupted Exception thrown when waiting for "+ch.getName()+"'s permissions to be changed.",LoggerService.ERROR);
             e.printStackTrace();
@@ -91,7 +95,7 @@ public class RoleChannels {
         String topic = "PRIVATE CHANNEL: "+name;
         RequestBuffer.request(() -> ch.changeTopic(topic));
         try{
-            guild.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) -> topic.equals(ch.getTopic()));
+            guild.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) -> topic.equals(ch.getTopic()),10,TimeUnit.SECONDS);
         }catch (InterruptedException e){
             LoggerService.log("Interrupted Exception thrown when waiting for "+ch.getName()+"'s topic to be changed.",LoggerService.ERROR);
             e.printStackTrace();
@@ -123,7 +127,7 @@ public class RoleChannels {
             LoggerService.log("Name of the channel to delete: "+ch.getName(),LoggerService.INFO);
             RequestBuffer.request(ch::delete);
             try {
-                event.getClient().getDispatcher().waitFor((ChannelDeleteEvent e) -> event.getGuild().getChannelByID(id)==null,2,TimeUnit.SECONDS);
+                event.getClient().getDispatcher().waitFor((ChannelDeleteEvent e) -> event.getGuild().getChannelByID(id)==null,10,TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 LoggerService.log("Interrupted Exception thrown when waiting for channel to be deleted.",LoggerService.ERROR);
                 e.printStackTrace();
@@ -146,8 +150,8 @@ public class RoleChannels {
         });
     }
 
-    // Join
 
+    // Join
     private static List<IChannel> joinableChannels(IGuild guild, IUser user){
         List<IChannel> chList = guild.getChannels();
         Iterator<IChannel> it = chList.iterator();
@@ -182,7 +186,10 @@ public class RoleChannels {
         channelListReact(msg,chList.size(),page);
     }
 
-    public static void showJoinableChannels(IGuild guild, IChannel channel, IUser user) {
+    public static void showJoinableChannels(MessageReceivedEvent event, List<String> args) {
+        IGuild guild = event.getGuild();
+        IChannel channel = event.getChannel();
+        IUser user = event.getAuthor();
         List<IChannel> chList = joinableChannels(guild,user);
         EmbedObject e = channelListEmbed(chList,0, JOIN);
         IMessage msg;
@@ -252,8 +259,8 @@ public class RoleChannels {
         }
     }
 
-    // Leave
 
+    // Leave
     private static List<IChannel> leavableChannels(IGuild guild, IUser user){
         List<IChannel> chList = guild.getChannels();
         Iterator<IChannel> it = chList.iterator();
@@ -276,7 +283,10 @@ public class RoleChannels {
         return chList;
     }
 
-    public static void showLeavableChannels(IGuild guild, IChannel channel, IUser user) {
+    public static void showLeavableChannels(MessageReceivedEvent event, List<String> args) {
+        IGuild guild = event.getGuild();
+        IChannel channel = event.getChannel();
+        IUser user = event.getAuthor();
         List<IChannel> chList = leavableChannels(guild,user);
         EmbedObject e = channelListEmbed(chList,0,LEAVE);
         IMessage msg;
@@ -363,7 +373,17 @@ public class RoleChannels {
         }
     }
 
+
     // Misc
+    private static void help(IChannel channel) {
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.withTitle("List of available arguments");
+        StringBuilder s = new StringBuilder();
+        commandMap.keySet().forEach(k -> s.append(k.toLowerCase()).append("\n"));
+        eb.withDesc(s.toString());
+        IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(eb.build());}).get();
+        RequestBuffer.request(() -> msg.addReaction(":x:"));
+    }
 
     private static EmbedObject channelListEmbed(List<IChannel> chList, int currentPage, int mode) {
         String[] Title1 = {"No more channels to join. You're EVERYWHERE!", "No more channels to leave."};

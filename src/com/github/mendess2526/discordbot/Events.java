@@ -9,17 +9,25 @@ import java.util.*;
 
 @SuppressWarnings("WeakerAccess")
 public class Events {
-    private final static String BOT_PREFIX = "|";
-    private static Map<String, Command> commandMap = new HashMap<>();
+    public final static String BOT_PREFIX = "|";
+    public static Map<String, Command> commandMap = new HashMap<>();
 
     static {
-        commandMap.put("HI", (event, args) -> RequestBuffer.request(() -> event.getChannel().sendMessage("Hello, minion!")));
+        commandMap.put("HELP", MiscCommands::help);
 
-        commandMap.put("ROLECHANNEL", ((event, args) -> RoleChannels.handle(args, event)));
+        commandMap.put("PING", MiscCommands::ping);
 
-        commandMap.put("JOIN", (event, args) -> RoleChannels.showJoinableChannels(event.getGuild(),event.getChannel(),event.getAuthor()));
+        commandMap.put("HI", MiscCommands::hi);
 
-        commandMap.put("LEAVE", (event, args) -> RoleChannels.showLeavableChannels(event.getGuild(),event.getChannel(),event.getAuthor()));
+        commandMap.put("ROLECHANNEL", (RoleChannels::handle));
+
+        commandMap.put("JOIN", RoleChannels::showJoinableChannels);
+
+        commandMap.put("LEAVE", RoleChannels::showLeavableChannels);
+
+        commandMap.put("SFX", AudioModule::sfx);
+
+        commandMap.put("SFXLIST", AudioModule::sfxlist);
 
     }
 
@@ -63,7 +71,10 @@ public class Events {
         args.remove(0);
 
         if(commandMap.containsKey(cmd)){
+            LoggerService.log("Valid command: "+cmd, LoggerService.INFO);
             commandMap.get(cmd).runCommand(event,args);
+        }else{
+            LoggerService.log("Invalid command "+cmd, LoggerService.INFO);
         }
     }
 }
