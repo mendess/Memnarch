@@ -39,10 +39,13 @@ public class Events implements IListener {
 
     private void handleMessageReceived(MessageReceivedEvent event) {
         String command[] = event.getMessage().getContent().toUpperCase().split("\\s");
-        LoggerService.log("Command: "+ Arrays.toString(command),LoggerService.INFO);
+
         if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")){
             RequestBuffer.request(() -> event.getMessage().addReaction(":white_check_mark:")).get();
             RequestBuffer.request(() -> event.getMessage().addReaction(":x:")).get();
+        }
+        if(command[0].contains(BOT_PREFIX)){
+            LoggerService.log("Command: "+ Arrays.toString(command),LoggerService.INFO);
         }
         if(command[0].equals(BOT_PREFIX + "HI")){
             RequestBuffer.request(() -> event.getChannel().sendMessage("Hello, minion!"));
