@@ -3,25 +3,24 @@ package com.github.mendess2526.discordbot;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IVoiceChannel;
+import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RequestBuffer;
 import sx.blah.discord.util.audio.AudioPlayer;
 import sx.blah.discord.util.audio.events.TrackFinishEvent;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class AudioModule {
@@ -38,20 +37,9 @@ public class AudioModule {
 
         AudioPlayer audioP = AudioPlayer.getAudioPlayerForGuild(event.getGuild());
 
-        File[] songDir = new File("sfx").listFiles(file -> file.getName().toUpperCase().contains(searchStr));
+        File[] songDir = songsDir(event,file -> file.getName().toUpperCase().contains(searchStr));
+        if(songDir==null){return;}
 
-        if(songDir == null){
-            boolean success = (new File("sfx")).mkdirs();
-            if(!success){
-                RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong, contact and admin"));
-                LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
-                vChannel.leave();
-                return;
-            }else{
-                songDir = new File("sfx").listFiles(file -> file.getName().toUpperCase().contains(searchStr));
-                if(songDir==null){return;}
-            }
-        }
         if(songDir.length == 0) {
             RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query")).get();
             return;
@@ -76,27 +64,19 @@ public class AudioModule {
             LoggerService.log("Interrupted while waiting for track to finish",LoggerService.ERROR);
             e.printStackTrace();
         }
+        /*
         try {
             TimeUnit.SECONDS.sleep(30);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        vChannel.leave();
+        vChannel.leave();*/
     }
 
     public static void sfxlist(MessageReceivedEvent event, List<String> strings) {
-        File[] songDir = new File("sfx").listFiles();
-        if(songDir == null){
-            boolean success = (new File("sfx")).mkdirs();
-            if(!success){
-                RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong, contact and admin"));
-                LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
-                return;
-            }else{
-                songDir = new File("sfx").listFiles();
-            }
-        }
+        File[] songDir = songsDir(event,File::isFile);
         if(songDir==null){return;}
+
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of sfx files:");
         StringBuilder s = new StringBuilder();
@@ -113,6 +93,11 @@ public class AudioModule {
     }
 
     public static void sfxAdd(MessageReceivedEvent event, List<String> args) {
+        if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)
+            && !event.getAuthor().equals(event.getClient().getApplicationOwner())){
+            RequestBuffer.request(() -> event.getChannel().sendMessage("You don't have permission to use that command"));
+            return;
+        }
         List<IMessage.Attachment> attachments = event.getMessage().getAttachments();
         if(attachments.size()==0){
             IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage("Please attach a file to the message");}).get();
@@ -134,10 +119,7 @@ public class AudioModule {
             return;
         }
         if(!new File("sfx").exists()){
-            boolean success = (new File("sfx")).mkdirs();
-            if(!success){
-                RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong, contact and admin"));
-                LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
+            if(songsDir(event,File::isFile)==null){
                 return;
             }
         }
@@ -181,6 +163,48 @@ public class AudioModule {
         }else{
             RequestBuffer.request(() -> event.getChannel().sendMessage("File couldn't be added"));
         }
+    }
+
+    public static void sfxDelete(MessageReceivedEvent event, List<String> args) {
+        if(!event.getAuthor().equals(event.getClient().getApplicationOwner())){
+            RequestBuffer.request(() -> event.getChannel().sendMessage("You can't use that command"));
+            return;
+        }
+        File[] songDir = songsDir(event,File::isFile);
+        String searchStr = String.join(" ", args);
+
+        List<File> toDelete = Arrays.stream(songDir)
+                                    .filter(s -> s.getName().toUpperCase().contains(searchStr))
+                                    .collect(Collectors.toList());
+        LoggerService.log("Files to delete: "+toDelete.toString(),LoggerService.INFO);
+        if(toDelete.size()==0){
+            RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query"));
+        }else if(toDelete.size()>1){
+            RequestBuffer.request(() -> event.getChannel().sendMessage("More than one file fits your query, please be more specific"));
+        }else{
+            String name = toDelete.get(0).getName();
+            if(toDelete.get(0).delete()){
+                RequestBuffer.request(() -> event.getChannel().sendMessage("Sfx: `"+name+"` deleted!"));
+                LoggerService.log("Deleted",LoggerService.SUCC);
+            }else{
+                RequestBuffer.request(() -> event.getChannel().sendMessage("Sfx: `"+name+"` not deleted"));
+                LoggerService.log("File not delete: ",LoggerService.ERROR);
+            }
+        }
+    }
+    public static File[] songsDir(MessageReceivedEvent event, FileFilter filter){
+        File[] songDir = new File("sfx").listFiles(filter);
+        if(songDir == null){
+            boolean success = (new File("sfx")).mkdirs();
+            if (success) {
+                songDir = new File("sfx").listFiles(filter);
+            }
+        }
+        if(songDir == null){
+            BotUtils.contactOwner(event,"Couldn't create sfx folder");
+            LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
+        }
+        return songDir;
     }
 }
 

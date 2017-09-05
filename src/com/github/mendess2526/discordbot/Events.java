@@ -31,6 +31,8 @@ public class Events {
 
         commandMap.put("SFXADD", AudioModule::sfxAdd);
 
+        commandMap.put("SFXDELETE", AudioModule::sfxDelete);
+
     }
 
     @EventSubscriber
