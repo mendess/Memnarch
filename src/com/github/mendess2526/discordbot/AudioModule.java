@@ -56,7 +56,7 @@ public class AudioModule {
             return;
         }
 
-        //audioP.clear();
+        audioP.clear();
 
         vChannel.join();
         try{
