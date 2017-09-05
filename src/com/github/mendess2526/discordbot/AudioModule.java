@@ -123,9 +123,11 @@ public class AudioModule {
             BotUtils.autoDelete(msg,event.getClient(),6);
             return;
         }
-        if(attach.getFilesize()>200){
+        if(attach.getFilesize()>200000){
             IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage("File too big, please keep it under 200kb");}).get();
+            LoggerService.log("File size: "+attach.getFilesize(),LoggerService.INFO);
             BotUtils.autoDelete(msg,event.getClient(),6);
+            return;
         }
         if(!new File("sfx").exists()){
             boolean success = (new File("sfx")).mkdirs();
