@@ -33,11 +33,7 @@ public class AudioModule {
             return;
         }
 
-        vChannel.join();
-
         String searchStr = String.join(" ", args);
-
-        LoggerService.log(searchStr,LoggerService.INFO);
 
         AudioPlayer audioP = AudioPlayer.getAudioPlayerForGuild(event.getGuild());
 
@@ -51,20 +47,18 @@ public class AudioModule {
                 vChannel.leave();
                 return;
             }else{
-                songDir = new File("sfx").listFiles();
+                songDir = new File("sfx").listFiles(file -> file.getName().toUpperCase().contains(searchStr));
+                if(songDir==null){return;}
             }
         }
-        if(songDir==null){return;}
         if(songDir.length == 0) {
             RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query")).get();
-            vChannel.leave();
             return;
         }
-        LoggerService.log(Arrays.toString(songDir),LoggerService.INFO);
 
-        LoggerService.log("Clearing audio player and attempting to play sound",LoggerService.INFO);
-        audioP.clear();
+        //audioP.clear();
 
+        vChannel.join();
         try{
             audioP.queue(songDir[0]);
         }catch (IOException e){
@@ -116,7 +110,7 @@ public class AudioModule {
         List<IMessage.Attachment> attachments = event.getMessage().getAttachments();
         if(attachments.size()==0){
             IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage("Please attach a file to the message");}).get();
-            BotUtils.autoDelete(msg,event.getClient());
+            BotUtils.autoDelete(msg,event.getClient(),6);
             return;
         }
         IMessage.Attachment attach = attachments.get(0);
@@ -126,8 +120,12 @@ public class AudioModule {
 
         if(!name[name.length-1].equals("mp3")){
             IMessage msg = RequestBuffer.request(() ->{return event.getChannel().sendMessage("You can only add `.mp3` files");}).get();
-            BotUtils.autoDelete(msg,event.getClient());
+            BotUtils.autoDelete(msg,event.getClient(),6);
             return;
+        }
+        if(attach.getFilesize()>200){
+            IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage("File too big, please keep it under 200kb");}).get();
+            BotUtils.autoDelete(msg,event.getClient(),6);
         }
         if(!new File("sfx").exists()){
             boolean success = (new File("sfx")).mkdirs();

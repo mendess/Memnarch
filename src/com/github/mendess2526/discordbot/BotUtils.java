@@ -4,12 +4,15 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IMessage;
 
+import java.util.concurrent.TimeUnit;
+
 @SuppressWarnings("WeakerAccess")
 public class BotUtils {
-    public static void autoDelete(IMessage msg, IDiscordClient client) {
+    public static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
 
         try {
-            client.getDispatcher().waitFor(MessageReceivedEvent.class);
+            TimeUnit.SECONDS.sleep(delay);
+            client.getDispatcher().waitFor(MessageReceivedEvent.class,30,TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             LoggerService.log("Interrupted while waiting for a Message received event on sfxadd",LoggerService.ERROR);
         }
