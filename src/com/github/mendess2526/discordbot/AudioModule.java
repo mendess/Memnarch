@@ -115,8 +115,6 @@ public class AudioModule {
         }
         IMessage.Attachment attach = attachments.get(0);
         String[] name = attach.getFilename().split(Pattern.quote("."));
-        LoggerService.log("FileName: "+ attach.getFilename(),LoggerService.INFO);
-        LoggerService.log("FileName: "+ Arrays.toString(name),LoggerService.INFO);
 
         if(!name[name.length-1].equals("mp3")){
             IMessage msg = RequestBuffer.request(() ->{return event.getChannel().sendMessage("You can only add `.mp3` files");}).get();
@@ -137,13 +135,15 @@ public class AudioModule {
                 return;
             }
         }
+        String filename = attach.getFilename().replaceAll(Pattern.quote("_")," ");
+        LoggerService.log("Filepath: sfx/"+filename,LoggerService.INFO);
         URL url;
         ReadableByteChannel rbc;
         FileOutputStream fos;
         try {
             url = new URL(attach.getUrl());
         } catch (MalformedURLException e) {
-            LoggerService.log("Malformed Url: \""+attach.getUrl()+"\" File: "+attach.getFilename(),LoggerService.ERROR);
+            LoggerService.log("Malformed Url: \""+attach.getUrl()+"\" File: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
         }
@@ -157,21 +157,20 @@ public class AudioModule {
             return;
         }
         try {
-            LoggerService.log(attach.getFilename().replaceAll(Pattern.quote("_")," "),LoggerService.INFO);
-            fos = new FileOutputStream("sfx/"+attach.getFilename().replaceAll(Pattern.quote("_")," "));
+            fos = new FileOutputStream("sfx/"+filename);
         } catch (FileNotFoundException e) {
-            LoggerService.log("File not found: "+attach.getFilename(),LoggerService.ERROR);
+            LoggerService.log("File not found: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
         }
         try {
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         } catch (IOException e) {
-            LoggerService.log("IOException for file: "+attach.getFilename(),LoggerService.ERROR);
+            LoggerService.log("IOException for file: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
         }
-        if(new File("sfx/"+attach.getFilename()).exists()){
+        if(new File("sfx/"+filename).exists()){
             RequestBuffer.request(() -> event.getChannel().sendMessage("File added successfully!"));
         }else{
             RequestBuffer.request(() -> event.getChannel().sendMessage("File couldn't be added"));
