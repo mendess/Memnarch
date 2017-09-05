@@ -6,32 +6,45 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.Reactio
 import sx.blah.discord.util.RequestBuffer;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class Events {
     public final static String BOT_PREFIX = "|";
-    public static Map<String, Command> commandMap = new HashMap<>();
+    public static Map<String, Command> miscMap = new HashMap<>();
+    public static Map<String, Command> sfxMap = new HashMap<>();
+    public static Map<String, Command> rolechannelsMap = new HashMap<>();
+
+    public static Map<String, Map<String, Command>> commandMap = new HashMap<>();
 
     static {
-        commandMap.put("HELP", MiscCommands::help);
+        miscMap.put("HELP", MiscCommands::help);
 
-        commandMap.put("PING", MiscCommands::ping);
+        miscMap.put("PING", MiscCommands::ping);
 
-        commandMap.put("HI", MiscCommands::hi);
+        miscMap.put("HI", MiscCommands::hi);
 
-        commandMap.put("ROLECHANNEL", (RoleChannels::handle));
+        //TODO Restart
 
-        commandMap.put("JOIN", RoleChannels::showJoinableChannels);
+        rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
 
-        commandMap.put("LEAVE", RoleChannels::showLeavableChannels);
+        rolechannelsMap.put("JOIN", RoleChannels::showJoinableChannels);
 
-        commandMap.put("SFX", AudioModule::sfx);
+        rolechannelsMap.put("LEAVE", RoleChannels::showLeavableChannels);
 
-        commandMap.put("SFXLIST", AudioModule::sfxlist);
+        sfxMap.put("SFX", AudioModule::sfx);
 
-        commandMap.put("SFXADD", AudioModule::sfxAdd);
+        sfxMap.put("SFXLIST", AudioModule::sfxlist);
 
-        commandMap.put("SFXDELETE", AudioModule::sfxDelete);
+        sfxMap.put("SFXADD", AudioModule::sfxAdd);
+
+        sfxMap.put("SFXDELETE", AudioModule::sfxDelete);
+
+        sfxMap.put("SFXRETRIEVE", AudioModule::sfxRetrieve);
+
+        commandMap.put("Miscellaneous",miscMap);
+        commandMap.put("Sfx",sfxMap);
+        commandMap.put("Rolechannels",rolechannelsMap);
 
     }
 
@@ -73,10 +86,19 @@ public class Events {
 
         List<String> args = new ArrayList<>(Arrays.asList(command));
         args.remove(0);
-
-        if(commandMap.containsKey(cmd)){
+        String[] key = commandMap.keySet()
+                                 .stream()
+                                 .filter(k -> commandMap.get(k).containsKey(cmd))
+                                 .collect(Collectors.toSet())
+                                 .toArray(new String[0]);
+        if(key.length>1){
+            BotUtils.contactOwner(event,"More then one command with the same name: "+event.getMessage().getContent());
+            LoggerService.log("There is more than one command group with the same command",LoggerService.ERROR);
+            return;
+        }
+        if(key.length==1 && commandMap.containsKey(key[0]) && commandMap.get(key[0]).containsKey(cmd)){
             LoggerService.log("Valid command: "+cmd, LoggerService.INFO);
-            commandMap.get(cmd).runCommand(event,args);
+            commandMap.get(key[0]).get(cmd).runCommand(event,args);
         }else{
             LoggerService.log("Invalid command "+cmd, LoggerService.INFO);
         }

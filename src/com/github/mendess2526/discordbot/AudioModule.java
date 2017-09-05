@@ -16,9 +16,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -26,6 +24,16 @@ import java.util.stream.Collectors;
 public class AudioModule {
 
     public static void sfx(MessageReceivedEvent event, List<String> args) {
+        if(args.size()==0){
+            IMessage msg = RequestBuffer.request(() ->{
+                return event.getChannel().sendMessage(new EmbedBuilder()
+                                                            .withTitle("Usage:")
+                                                            .withDesc("`"+Events.BOT_PREFIX+"sfx <name>`. This name can be partial")
+                                                            .build());
+            }).get();
+            BotUtils.autoDelete(msg,event.getClient(),6);
+            return;
+        }
         IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
 
         if(vChannel == null){
@@ -64,6 +72,7 @@ public class AudioModule {
             LoggerService.log("Interrupted while waiting for track to finish",LoggerService.ERROR);
             e.printStackTrace();
         }
+        //TODO Afk timeout
         /*
         try {
             TimeUnit.SECONDS.sleep(30);
@@ -79,13 +88,25 @@ public class AudioModule {
 
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of sfx files:");
-        StringBuilder s = new StringBuilder();
         if(songDir.length==0){
-            s.append("**No files :(**");
+            eb.withDesc("**No files :(**");
         }else{
-            Arrays.asList(songDir).forEach(f -> s.append(f.getName()).append("\n"));
+            List<String> sfxNames = Arrays.stream(songDir).map(File::getName).collect(Collectors.toList());
+            Collections.sort(sfxNames);
+            Iterator<String> it = sfxNames.iterator();
+            int count=0;
+            int column=0;
+            while (it.hasNext()){
+                StringBuilder s = new StringBuilder();
+                while (it.hasNext() && count<12){
+                    s.append(it.next()).append("\n");
+                    count++;
+                }
+                eb.appendField((sfxNames.get(column*12).charAt(0)+"-"+sfxNames.get(column*12+count-1).charAt(0)).toUpperCase()
+                        ,s.toString(),true);
+                count=0;column++;
+            }
         }
-        eb.withDesc(s.toString());
 
         eb.withFooterText("Use "+Events.BOT_PREFIX+"sfx <name> to play one");
         IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage(eb.build());}).get();
@@ -130,29 +151,19 @@ public class AudioModule {
         FileOutputStream fos;
         try {
             url = new URL(attach.getUrl());
+            HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+            httpcon.addRequestProperty("User-Agent", "Mozilla/4.0");
+            rbc = Channels.newChannel(httpcon.getInputStream());
+            fos = new FileOutputStream("sfx/"+filename);
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         } catch (MalformedURLException e) {
             LoggerService.log("Malformed Url: \""+attach.getUrl()+"\" File: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
-        }
-        try {
-            HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
-            httpcon.addRequestProperty("User-Agent", "Mozilla/4.0");
-            rbc = Channels.newChannel(httpcon.getInputStream());
-        } catch (IOException e) {
-            LoggerService.log("IOException initializing ReadableByteChannel",LoggerService.ERROR);
-            e.printStackTrace();
-            return;
-        }
-        try {
-            fos = new FileOutputStream("sfx/"+filename);
         } catch (FileNotFoundException e) {
             LoggerService.log("File not found: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
-        }
-        try {
-            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         } catch (IOException e) {
             LoggerService.log("IOException for file: "+filename,LoggerService.ERROR);
             e.printStackTrace();
@@ -183,13 +194,30 @@ public class AudioModule {
             RequestBuffer.request(() -> event.getChannel().sendMessage("More than one file fits your query, please be more specific"));
         }else{
             String name = toDelete.get(0).getName();
+            BotUtils.sendFile(event.getChannel(),toDelete.get(0));
             if(toDelete.get(0).delete()){
                 RequestBuffer.request(() -> event.getChannel().sendMessage("Sfx: `"+name+"` deleted!"));
                 LoggerService.log("Deleted",LoggerService.SUCC);
             }else{
                 RequestBuffer.request(() -> event.getChannel().sendMessage("Sfx: `"+name+"` not deleted"));
-                LoggerService.log("File not delete: ",LoggerService.ERROR);
+                LoggerService.log("File not deleted",LoggerService.ERROR);
             }
+        }
+    }
+    public static void sfxRetrieve(MessageReceivedEvent event, List<String> args){
+        File[] songDir = songsDir(event,File::isFile);
+        String searchStr = String.join(" ", args);
+
+        List<File> toRetrieve = Arrays.stream(songDir)
+                .filter(s -> s.getName().toUpperCase().contains(searchStr))
+                .collect(Collectors.toList());
+        LoggerService.log("Files to retrieve: "+toRetrieve.toString(),LoggerService.INFO);
+        if(toRetrieve.size()==0){
+            RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query"));
+        }else if(toRetrieve.size()>1){
+            RequestBuffer.request(() -> event.getChannel().sendMessage("More than one file fits your query, please be more specific"));
+        }else{
+            BotUtils.sendFile(event.getChannel(), toRetrieve.get(0));
         }
     }
     public static File[] songsDir(MessageReceivedEvent event, FileFilter filter){

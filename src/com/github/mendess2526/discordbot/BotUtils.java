@@ -3,11 +3,14 @@ package com.github.mendess2526.discordbot;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.Event;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.RequestBuffer;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("WeakerAccess")
@@ -35,5 +38,16 @@ public class BotUtils {
                                 "[Guild  : "+guild+"]\n" +
                                 "[Channel: "+channel+"]```"));
         }
+    }
+
+    public static void sendFile(IChannel ch, File file) {
+        RequestBuffer.request(() -> {
+            try {
+                ch.sendFile(file);
+            } catch (FileNotFoundException e) {
+                LoggerService.log("File not found when sending to channel",LoggerService.ERROR);
+                e.printStackTrace();
+            }
+        }).get();
     }
 }

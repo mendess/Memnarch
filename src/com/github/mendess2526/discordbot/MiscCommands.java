@@ -15,9 +15,11 @@ public class MiscCommands {
     public static void help(MessageReceivedEvent event, List<String> args) {
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of available commands");
-        StringBuilder s = new StringBuilder();
-        Events.commandMap.keySet().forEach(k -> s.append(k.toLowerCase()).append("\n"));
-        eb.withDesc(s.toString());
+        Events.commandMap.keySet().forEach(k -> {
+            StringBuilder s = new StringBuilder();
+            Events.commandMap.get(k).keySet().forEach(nestedK -> s.append(nestedK.toLowerCase()).append("\n"));
+            eb.appendField(k,s.toString(),true);
+        });
         eb.withFooterText("Prefix: "+Events.BOT_PREFIX);
         IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage(eb.build());}).get();
         RequestBuffer.request(() -> msg.addReaction(":x:"));
