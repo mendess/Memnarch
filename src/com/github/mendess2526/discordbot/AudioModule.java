@@ -1,5 +1,6 @@
 package com.github.mendess2526.discordbot;
 
+import org.apache.commons.lang3.text.WordUtils;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IVoiceChannel;
@@ -91,7 +92,9 @@ public class AudioModule {
         if(songDir.length==0){
             eb.withDesc("**No files :(**");
         }else{
-            List<String> sfxNames = Arrays.stream(songDir).map(File::getName).collect(Collectors.toList());
+            List<String> sfxNames = Arrays.stream(songDir)
+                                          .map(File::getName)
+                                          .map(WordUtils::capitalizeFully).collect(Collectors.toList());
             Collections.sort(sfxNames);
             Iterator<String> it = sfxNames.iterator();
             int count=0;
