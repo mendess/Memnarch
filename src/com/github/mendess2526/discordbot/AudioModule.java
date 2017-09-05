@@ -20,6 +20,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @SuppressWarnings("WeakerAccess")
@@ -73,6 +74,11 @@ public class AudioModule {
             event.getClient().getDispatcher().waitFor(TrackFinishEvent.class);
         } catch (InterruptedException e) {
             LoggerService.log("Interrupted while waiting for track to finish",LoggerService.ERROR);
+            e.printStackTrace();
+        }
+        try {
+            TimeUnit.SECONDS.sleep(30);
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
         vChannel.leave();
