@@ -18,7 +18,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -45,14 +44,19 @@ public class AudioModule {
         File[] songDir = new File("sfx").listFiles(file -> file.getName().toUpperCase().contains(searchStr));
 
         if(songDir == null){
-            LoggerService.log("No sfx folder",LoggerService.ERROR);
-            RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong, contact the admin"));
-            vChannel.leave();
-            return;
+            boolean success = (new File("sfx")).mkdirs();
+            if(!success){
+                RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong, contact and admin"));
+                LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
+                vChannel.leave();
+                return;
+            }else{
+                songDir = new File("sfx").listFiles();
+            }
         }
+        if(songDir==null){return;}
         if(songDir.length == 0) {
-            LoggerService.log("No files in the sfx folder match your query",LoggerService.ERROR);
-            RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query"));
+            RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query")).get();
             vChannel.leave();
             return;
         }
@@ -83,15 +87,24 @@ public class AudioModule {
     public static void sfxlist(MessageReceivedEvent event, List<String> strings) {
         File[] songDir = new File("sfx").listFiles();
         if(songDir == null){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong. Contacting an admin"));
-            LoggerService.log("No sfx folder",LoggerService.ERROR);
-            return;
+            boolean success = (new File("sfx")).mkdirs();
+            if(!success){
+                RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong, contact and admin"));
+                LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
+                return;
+            }else{
+                songDir = new File("sfx").listFiles();
+            }
         }
+        if(songDir==null){return;}
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of sfx files:");
-
         StringBuilder s = new StringBuilder();
-        Arrays.asList(songDir).forEach(f -> s.append(f.getName()).append("\n"));
+        if(songDir.length==0){
+            s.append("**No files :(**");
+        }else{
+            Arrays.asList(songDir).forEach(f -> s.append(f.getName()).append("\n"));
+        }
         eb.withDesc(s.toString());
 
         eb.withFooterText("Use "+Events.BOT_PREFIX+"sfx <name> to play one");
@@ -115,6 +128,14 @@ public class AudioModule {
             IMessage msg = RequestBuffer.request(() ->{return event.getChannel().sendMessage("You can only add `.mp3` files");}).get();
             BotUtils.autoDelete(msg,event.getClient());
             return;
+        }
+        if(!new File("sfx").exists()){
+            boolean success = (new File("sfx")).mkdirs();
+            if(!success){
+                RequestBuffer.request(() -> event.getChannel().sendMessage("Something went wrong, contact and admin"));
+                LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
+                return;
+            }
         }
         URL url;
         ReadableByteChannel rbc;
