@@ -157,6 +157,7 @@ public class AudioModule {
             return;
         }
         try {
+            LoggerService.log(attach.getFilename().replaceAll(Pattern.quote("_")," "),LoggerService.INFO);
             fos = new FileOutputStream("sfx/"+attach.getFilename().replaceAll(Pattern.quote("_")," "));
         } catch (FileNotFoundException e) {
             LoggerService.log("File not found: "+attach.getFilename(),LoggerService.ERROR);
