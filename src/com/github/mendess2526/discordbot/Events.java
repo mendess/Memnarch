@@ -29,6 +29,8 @@ public class Events {
 
         commandMap.put("SFXLIST", AudioModule::sfxlist);
 
+        commandMap.put("SFXADD", AudioModule::sfxAdd);
+
     }
 
     @EventSubscriber

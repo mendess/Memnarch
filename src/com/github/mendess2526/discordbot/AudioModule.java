@@ -10,10 +10,18 @@ import sx.blah.discord.util.audio.events.TrackFinishEvent;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("WeakerAccess")
 public class AudioModule {
@@ -89,6 +97,63 @@ public class AudioModule {
         eb.withFooterText("Use "+Events.BOT_PREFIX+"sfx <name> to play one");
         IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage(eb.build());}).get();
         RequestBuffer.request(() -> msg.addReaction(":x:")).get();
+    }
+
+    public static void sfxAdd(MessageReceivedEvent event, List<String> args) {
+        List<IMessage.Attachment> attachments = event.getMessage().getAttachments();
+        if(attachments.size()==0){
+            IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage("Please attach a file to the message");}).get();
+            BotUtils.autoDelete(msg,event.getClient());
+            return;
+        }
+        IMessage.Attachment attach = attachments.get(0);
+        String[] name = attach.getFilename().split(Pattern.quote("."));
+        LoggerService.log("FileName: "+ attach.getFilename(),LoggerService.INFO);
+        LoggerService.log("FileName: "+ Arrays.toString(name),LoggerService.INFO);
+
+        if(!name[name.length-1].equals("mp3")){
+            IMessage msg = RequestBuffer.request(() ->{return event.getChannel().sendMessage("You can only add `.mp3` files");}).get();
+            BotUtils.autoDelete(msg,event.getClient());
+            return;
+        }
+        URL url;
+        ReadableByteChannel rbc;
+        FileOutputStream fos;
+        try {
+            url = new URL(attach.getUrl());
+        } catch (MalformedURLException e) {
+            LoggerService.log("Malformed Url: \""+attach.getUrl()+"\" File: "+attach.getFilename(),LoggerService.ERROR);
+            e.printStackTrace();
+            return;
+        }
+        try {
+            HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
+            httpcon.addRequestProperty("User-Agent", "Mozilla/4.0");
+            rbc = Channels.newChannel(httpcon.getInputStream());
+        } catch (IOException e) {
+            LoggerService.log("IOException initializing ReadableByteChannel",LoggerService.ERROR);
+            e.printStackTrace();
+            return;
+        }
+        try {
+            fos = new FileOutputStream("sfx/"+attach.getFilename());
+        } catch (FileNotFoundException e) {
+            LoggerService.log("File not found: "+attach.getFilename(),LoggerService.ERROR);
+            e.printStackTrace();
+            return;
+        }
+        try {
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        } catch (IOException e) {
+            LoggerService.log("IOException for file: "+attach.getFilename(),LoggerService.ERROR);
+            e.printStackTrace();
+            return;
+        }
+        if(new File("sfx/"+attach.getFilename()).exists()){
+            RequestBuffer.request(() -> event.getChannel().sendMessage("File added successfully!"));
+        }else{
+            RequestBuffer.request(() -> event.getChannel().sendMessage("File couldn't be added"));
+        }
     }
 }
 
