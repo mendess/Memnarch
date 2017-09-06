@@ -73,7 +73,7 @@ public class Events {
         LoggerService.log("Scheduling leave",LoggerService.INFO);
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
-        Main.leaveVoice = executor.schedule(leave,5, TimeUnit.SECONDS);
+        Main.leaveVoice = executor.schedule(leave,30, TimeUnit.MINUTES);
     }
     @EventSubscriber
     public void handleTrackStarted(TrackStartEvent event){
