@@ -28,10 +28,11 @@ public class RoleChannels {
             IChannel ch = newChannel(args.get(1), event.getGuild());
             if(ch!=null){
                 LoggerService.log("Channel "+ch.getName()+" created successfully!",LoggerService.SUCC);
-                RequestBuffer.request(() -> event.getChannel().sendMessage("Channel "+ch.getName()+" created successfully!"));
+                BotUtils.sendMessage(event.getChannel(),
+                        "Channel "+ch.getName()+" created successfully!",30,false);
             }else{
                 LoggerService.log("Couldn't create channel",LoggerService.ERROR);
-                RequestBuffer.request(() -> event.getChannel().sendMessage("Couldn't create channel"));
+                BotUtils.sendMessage(event.getChannel(),"Couldn't create channel!",30,false);
             }
         });
 
@@ -41,16 +42,18 @@ public class RoleChannels {
     }
 
 
-    // Making Channels
+    // Managing Channels
     public static void handle(MessageReceivedEvent event, List<String> args){
 
         if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("You don't have permission to use that command"));
+            BotUtils.sendMessage(event.getChannel(),"You don't have permission to use that command",30,false);
         }else{
             try{
                 commandMap.get(args.get(0)).runCommand(event,args);
             }catch (IndexOutOfBoundsException e){
-                help(event.getChannel());
+                HashMap<String,Set<String>> cmds = new HashMap<>();
+                cmds.put("Rolechannels",commandMap.keySet());
+                BotUtils.help(event.getAuthor(),event.getChannel(),cmds);
             }
         }
     }
@@ -113,7 +116,7 @@ public class RoleChannels {
         try {
             id = Long.parseLong(name.replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
         }catch (NumberFormatException e){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("Use `#` to specify what channel you want to delete."));
+            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",30,false);
             return;
         }
         ch = event.getGuild().getChannelByID(id);
@@ -132,10 +135,12 @@ public class RoleChannels {
                 LoggerService.log("Interrupted Exception thrown when waiting for channel to be deleted.",LoggerService.ERROR);
                 e.printStackTrace();
             }
-            RequestBuffer.request(() -> event.getChannel().sendMessage(event.getGuild().getChannelByID(id)==null ? "Channel deleted successfully" : "Couldn't delete channel"));
+            BotUtils.sendMessage(event.getChannel(),
+                    event.getGuild().getChannelByID(id)==null ? "Channel deleted successfully" : "Couldn't delete channel",
+                    30,false);
         }else {
             LoggerService.log(ch.getName()+" is not a Role Channel",LoggerService.INFO);
-            RequestBuffer.request(() -> event.getChannel().sendMessage(ch.getName()+" is not a Private Channel, I can't delete it"));
+            BotUtils.sendMessage(event.getChannel(),ch.getName()+" is not a Private Channel, I can't delete it",30,false);
         }
     }
 
@@ -146,7 +151,7 @@ public class RoleChannels {
         chList.forEach(c -> {
             RequestBuffer.request(() -> c.changeTopic("PRIVATE CHANNEL: "+c.getName())).get();
             RequestBuffer.request(() -> c.overrideUserPermissions(event.getGuild().getClient().getOurUser(),readMessages,noPermits)).get();
-            RequestBuffer.request(() -> event.getChannel().sendMessage("changed topic of "+c.getName()));
+            BotUtils.sendMessage(event.getChannel(),"Changed topic of "+c.getName(),30,false);
         });
     }
 
@@ -192,15 +197,18 @@ public class RoleChannels {
         IUser user = event.getAuthor();
         List<IChannel> chList = joinableChannels(guild,user);
         EmbedObject e = channelListEmbed(chList,0, JOIN);
-        IMessage msg;
-        msg = RequestBuffer.request(() -> {
-            return channel.sendMessage(user.mention(),e);
-        }).get();
+        IMessage msg = BotUtils.sendMessage(channel,user.mention(),e,-1,true);
         channelListReact(msg,chList.size(),0);
     }
 
     private static void addUser(IChannel ch, IUser user) {
-        RequestBuffer.request(() -> ch.overrideUserPermissions(user,EnumSet.of(Permissions.READ_MESSAGES),EnumSet.noneOf(Permissions.class))).get();
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            LoggerService.log("Interrupted on RoleChannels.addUser",LoggerService.ERROR);
+            e.printStackTrace();
+        }
+        RequestBuffer.request(() -> ch.overrideUserPermissions(user,EnumSet.of(Permissions.READ_MESSAGES),EnumSet.noneOf(Permissions.class)));
     }
 
     public static void join(ReactionEvent event) {
@@ -228,7 +236,6 @@ public class RoleChannels {
                 case "four":
                 case "five":
                 case "six": {
-                    LoggerService.log(event.getMessage().getEmbeds().get(0).getFooter().getText(), LoggerService.INFO);
                     String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
                     int page = Integer.parseInt(pageStr) - 1;
                     int chNumber = literal2Int(opt);
@@ -237,22 +244,23 @@ public class RoleChannels {
                     RequestBuffer.request(() -> event.getMessage().removeAllReactions());
                     IChannel ch  = joinableChannels(event.getGuild(), event.getUser()).get((chNumber - 1) + page * 6);
                     addUser(ch, event.getUser());
-                    RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                            new EmbedBuilder().withTitle(":white_check_mark: Channel Joined!").build()));
                     try {
                         event.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) ->
-                                !ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)
-                        ,2, TimeUnit.SECONDS);
+                                e.getNewChannel().getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)
+                        ,5, TimeUnit.SECONDS);
                     } catch (InterruptedException e) {
                         LoggerService.log("Interrupted Exception thrown when waiting for "+event.getUser().getName()+"to be added to "+ch.getName()+".",LoggerService.ERROR);
                         e.printStackTrace();
                     }
+                    if(ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)){
+                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
+                                new EmbedBuilder().withTitle(":white_check_mark: Channel joined!").build()));
+                    }else{
+                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
+                                new EmbedBuilder().withTitle(":x: Couldn't join channel").build()));
+                    }
                     LoggerService.log("Channel list after adding user: "+ Arrays.toString(joinableChannels(event.getGuild(),event.getUser()).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
                     showJoinableChannels(event.getMessage(), event.getUser(), page);
-                    /*}else{
-                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                                                            new EmbedBuilder().withTitle(":x: Couldn't join channel").build()));
-                    }*/
                     break;
                 }
             }
@@ -289,10 +297,7 @@ public class RoleChannels {
         IUser user = event.getAuthor();
         List<IChannel> chList = leavableChannels(guild,user);
         EmbedObject e = channelListEmbed(chList,0,LEAVE);
-        IMessage msg;
-        msg = RequestBuffer.request(() -> {
-            return channel.sendMessage(user.mention(),e);
-        }).get();
+        IMessage msg = BotUtils.sendMessage(channel,user.mention(),e,-1,true);
         channelListReact(msg,chList.size(),0);
     }
 
@@ -309,7 +314,7 @@ public class RoleChannels {
     }
 
     private static void removeUser(IChannel ch, IUser user) {
-        RequestBuffer.request(() ->ch.overrideUserPermissions(user,EnumSet.noneOf(Permissions.class),EnumSet.of(Permissions.READ_MESSAGES))).get();
+        RequestBuffer.request(() ->ch.overrideUserPermissions(user,EnumSet.noneOf(Permissions.class),EnumSet.of(Permissions.READ_MESSAGES)));
     }
 
     public static void leave(ReactionEvent event) {
@@ -347,24 +352,24 @@ public class RoleChannels {
                     RequestBuffer.request(() -> event.getMessage().removeAllReactions());
                     IChannel ch  = leavableChannels(event.getGuild(), event.getUser()).get((chNumber - 1) + page * 6);
                     removeUser(ch, event.getUser());
-                    RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                            new EmbedBuilder().withTitle(":white_check_mark: Channel Left!").build()));
                     try {
                         event.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) ->
-                                !ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)
-                        ,2,TimeUnit.SECONDS);
+                                !e.getNewChannel().getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)
+                        ,5,TimeUnit.SECONDS);
                     } catch (InterruptedException e) {
                         LoggerService.log("Interrupted Exception thrown when waiting for "+event.getUser().getName()+"to be removed from "+ch.getName()+".",LoggerService.ERROR);
                         e.printStackTrace();
                     }
+                    if(!ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)){
+                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
+                                new EmbedBuilder().withTitle(":white_check_mark: Channel Left!").build()));
+                    }else{
+                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
+                                new EmbedBuilder().withTitle(":x: Couldn't leave channel").build()));
+                    }
                     LoggerService.log("Channel list after removing user: "+ Arrays.toString(joinableChannels(event.getGuild(),event.getUser()).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
                     showLeavableChannels(event.getMessage(), event.getUser(), page);
-                    /*RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                                                            new EmbedBuilder().withTitle(":white_check_mark: Channel Left!").build()));*/
-                    /*}else{
-                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                                                            new EmbedBuilder().withTitle(":x: Couldn't leave channel").build()));
-                    }*/
+                    /**/
 
 
                     break;
@@ -375,15 +380,6 @@ public class RoleChannels {
 
 
     // Misc
-    private static void help(IChannel channel) {
-        EmbedBuilder eb = new EmbedBuilder();
-        eb.withTitle("List of available arguments");
-        StringBuilder s = new StringBuilder();
-        commandMap.keySet().forEach(k -> s.append(k.toLowerCase()).append("\n"));
-        eb.withDesc(s.toString());
-        IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(eb.build());}).get();
-        RequestBuffer.request(() -> msg.addReaction(":x:"));
-    }
 
     private static EmbedObject channelListEmbed(List<IChannel> chList, int currentPage, int mode) {
         String[] Title1 = {"No more channels to join. You're EVERYWHERE!", "No more channels to leave."};
@@ -431,7 +427,7 @@ public class RoleChannels {
         if(!isLastPage){
             RequestBuffer.request(() -> msg.addReaction(":arrow_forward:")).get();
         }
-        RequestBuffer.request(() -> msg.addReaction(":x:")).get();
+        BotUtils.closeButton(msg);
     }
 
     private static int literal2Int(String literal){

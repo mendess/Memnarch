@@ -3,14 +3,21 @@ package com.github.mendess2526.discordbot;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.RequestBuffer;
+import sx.blah.discord.util.audio.events.TrackFinishEvent;
+import sx.blah.discord.util.audio.events.TrackStartEvent;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class Events {
     public final static String BOT_PREFIX = "|";
+
     public static Map<String, Command> miscMap = new HashMap<>();
     public static Map<String, Command> sfxMap = new HashMap<>();
     public static Map<String, Command> rolechannelsMap = new HashMap<>();
@@ -24,7 +31,7 @@ public class Events {
 
         miscMap.put("HI", MiscCommands::hi);
 
-        //TODO Restart
+        miscMap.put("RESTART",MiscCommands::restart);
 
         rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
 
@@ -36,31 +43,43 @@ public class Events {
 
         sfxMap.put("SFXLIST", AudioModule::sfxlist);
 
-        sfxMap.put("SFXADD", AudioModule::sfxAdd);
-
-        sfxMap.put("SFXDELETE", AudioModule::sfxDelete);
-
-        sfxMap.put("SFXRETRIEVE", AudioModule::sfxRetrieve);
-
         commandMap.put("Miscellaneous",miscMap);
         commandMap.put("Sfx",sfxMap);
         commandMap.put("Rolechannels",rolechannelsMap);
 
     }
-
+    //TODO Greetings
     @EventSubscriber
     public void handleReactionEvent(ReactionEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
         if(event.getReaction().getUserReacted(event.getClient().getOurUser()) &&
                 !(event.getUser().equals(event.getClient().getOurUser()))){
-            if(event.getReaction().getUnicodeEmoji().getAliases().get(0).equals("x")){
-                LoggerService.log(event.getUser().getName()+" reacted to the \"no more channels\" message with :"+event.getReaction().getUnicodeEmoji().getAliases().get(0)+":",LoggerService.INFO);
-                event.getMessage().delete();
-            }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
-                RoleChannels.join(event);
-            }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to leave!")){
-                RoleChannels.leave(event);
+
+            List<IUser> mentions = event.getMessage().getMentions();
+            if(mentions.isEmpty() || mentions.contains(event.getUser())){
+                if(event.getReaction().getUnicodeEmoji().getAliases().get(0).equals("heavy_multiplication_x")){
+                    LoggerService.log(event.getUser().getName()+" clicked an :heavy_multiplication_x:",LoggerService.INFO);
+                    event.getMessage().delete();
+                }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
+                    RoleChannels.join(event);
+                }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to leave!")) {
+                    RoleChannels.leave(event);
+                }
             }
+        }
+    }
+    @EventSubscriber
+    public void handleTrackFinished(TrackFinishEvent event){
+        LoggerService.log("Scheduling leave",LoggerService.INFO);
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
+        Main.leaveVoice = executor.schedule(leave,5, TimeUnit.SECONDS);
+    }
+    @EventSubscriber
+    public void handleTrackStarted(TrackStartEvent event){
+        if(Main.leaveVoice != null){
+            Main.leaveVoice.cancel(true);
+            LoggerService.log("Leave canceled",LoggerService.INFO);
         }
     }
     @EventSubscriber

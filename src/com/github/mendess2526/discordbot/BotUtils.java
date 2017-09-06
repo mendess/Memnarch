@@ -1,19 +1,23 @@
 package com.github.mendess2526.discordbot;
 
+import org.apache.commons.lang3.text.WordUtils;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.Event;
+import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RequestBuffer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 public class BotUtils {
     private static String ERROR_SMTH_WRONG = "Something went wrong, contact the owner of the bot";
 
@@ -40,6 +44,27 @@ public class BotUtils {
         }
     }
 
+    public static IMessage sendMessage(IChannel channel, String message, int autoDeleteDelay, boolean reactCross){
+        IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(message);}).get();
+        if(reactCross){closeButton(msg);}
+        if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
+        return msg;
+    }
+
+    public static IMessage sendMessage(IChannel channel, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
+        IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(eb);}).get();
+        if(reactCross){closeButton(msg);}
+        if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
+        return msg;
+    }
+
+    public static IMessage sendMessage(IChannel channel, String message, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
+        IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(message,eb);}).get();
+        if(reactCross){closeButton(msg);}
+        if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
+        return msg;
+    }
+
     public static void sendFile(IChannel ch, File file) {
         RequestBuffer.request(() -> {
             try {
@@ -49,5 +74,21 @@ public class BotUtils {
                 e.printStackTrace();
             }
         }).get();
+    }
+
+    public static void closeButton(IMessage msg){
+        RequestBuffer.request(() -> msg.addReaction(":heavy_multiplication_x:")).get();
+    }
+
+    public static void help(IUser user, IChannel channel, Map<String,Set<String>> commands) {
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.withTitle("List of available commands for:");
+        commands.keySet().forEach(k -> {
+            StringBuilder s = new StringBuilder();
+            commands.get(k).forEach(nestedK -> s.append(nestedK.toLowerCase()).append("\n"));
+            eb.appendField(WordUtils.capitalizeFully(k),s.toString(), true);
+        });
+        eb.withFooterText("Prefix: "+Events.BOT_PREFIX);
+        sendMessage(channel,user.mention(),eb.build(),-1,true);
     }
 }

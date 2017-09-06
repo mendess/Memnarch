@@ -6,9 +6,7 @@ import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.EmbedBuilder;
-import sx.blah.discord.util.RequestBuffer;
 import sx.blah.discord.util.audio.AudioPlayer;
-import sx.blah.discord.util.audio.events.TrackFinishEvent;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.*;
@@ -23,22 +21,33 @@ import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class AudioModule {
+    public static Map<String,Command> commandMap = new HashMap<>();
+
+    static {
+
+        commandMap.put("<LIST", AudioModule::sfxlist);
+
+        commandMap.put("<ADD", AudioModule::sfxAdd);
+
+        commandMap.put("<DELETE", AudioModule::sfxDelete);
+
+        commandMap.put("<RETRIEVE", AudioModule::sfxRetrieve);
+    }
 
     public static void sfx(MessageReceivedEvent event, List<String> args) {
-        if(args.size()==0){
-            IMessage msg = RequestBuffer.request(() ->{
-                return event.getChannel().sendMessage(new EmbedBuilder()
-                                                            .withTitle("Usage:")
-                                                            .withDesc("`"+Events.BOT_PREFIX+"sfx <name>`. This name can be partial")
-                                                            .build());
-            }).get();
-            BotUtils.autoDelete(msg,event.getClient(),6);
+        if (args.size() == 0) {
+            HashMap<String, Set<String>> cmds = new HashMap<>();
+            Set<String> options = new HashSet<>();
+            options.addAll(commandMap.keySet());
+            options.add("\"name\"");
+            cmds.put("Sfx", options);
+            BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
             return;
         }
-        IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
 
-        if(vChannel == null){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("Please join a voice channel before using this command!"));
+        IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
+        if (vChannel == null) {
+            BotUtils.sendMessage(event.getChannel(), "Please join a voice channel before using this command!", 10, false);
             return;
         }
 
@@ -46,41 +55,29 @@ public class AudioModule {
 
         AudioPlayer audioP = AudioPlayer.getAudioPlayerForGuild(event.getGuild());
 
-        File[] songDir = songsDir(event,file -> file.getName().toUpperCase().contains(searchStr));
-        if(songDir==null){return;}
+        File[] songDir = songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
+        if (songDir == null) {
+            return;
+        }
 
-        if(songDir.length == 0) {
-            RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query")).get();
+        if (songDir.length == 0) {
+            BotUtils.sendMessage(event.getChannel(), "No files in the sfx folder match your query", 30, false);
             return;
         }
 
         audioP.clear();
 
         vChannel.join();
-        try{
+        try {
             audioP.queue(songDir[0]);
-        }catch (IOException e){
-            LoggerService.log(e.getMessage(),LoggerService.ERROR);
-            RequestBuffer.request(() -> event.getChannel().sendMessage("There was a problem playing that sound."));
+        } catch (IOException e) {
+            LoggerService.log(e.getMessage(), LoggerService.ERROR);
+            BotUtils.sendMessage(event.getChannel(), "There was a problem playing that sound.", 30, false);
         } catch (UnsupportedAudioFileException e) {
-            LoggerService.log(e.getMessage(),LoggerService.ERROR);
-            RequestBuffer.request(() -> event.getChannel().sendMessage("There was a problem playing that sound."));
+            LoggerService.log(e.getMessage(), LoggerService.ERROR);
+            BotUtils.sendMessage(event.getChannel(), "There was a problem playing that sound.", 30, false);
             e.printStackTrace();
         }
-        try {
-            event.getClient().getDispatcher().waitFor(TrackFinishEvent.class);
-        } catch (InterruptedException e) {
-            LoggerService.log("Interrupted while waiting for track to finish",LoggerService.ERROR);
-            e.printStackTrace();
-        }
-        //TODO Afk timeout
-        /*
-        try {
-            TimeUnit.SECONDS.sleep(30);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        vChannel.leave();*/
     }
 
     public static void sfxlist(MessageReceivedEvent event, List<String> strings) {
@@ -112,34 +109,30 @@ public class AudioModule {
         }
 
         eb.withFooterText("Use "+Events.BOT_PREFIX+"sfx <name> to play one");
-        IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage(eb.build());}).get();
-        RequestBuffer.request(() -> msg.addReaction(":x:")).get();
+        BotUtils.sendMessage(event.getChannel(),event.getAuthor().mention(),eb.build(),-1,true);
     }
 
     public static void sfxAdd(MessageReceivedEvent event, List<String> args) {
         if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)
             && !event.getAuthor().equals(event.getClient().getApplicationOwner())){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("You don't have permission to use that command"));
+            BotUtils.sendMessage(event.getChannel(),"You don't have permission to use that command",30,false);
             return;
         }
         List<IMessage.Attachment> attachments = event.getMessage().getAttachments();
         if(attachments.size()==0){
-            IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage("Please attach a file to the message");}).get();
-            BotUtils.autoDelete(msg,event.getClient(),6);
+            BotUtils.sendMessage(event.getChannel(),"Please attach a file to the message",10,false);
             return;
         }
         IMessage.Attachment attach = attachments.get(0);
         String[] name = attach.getFilename().split(Pattern.quote("."));
 
         if(!name[name.length-1].equals("mp3")){
-            IMessage msg = RequestBuffer.request(() ->{return event.getChannel().sendMessage("You can only add `.mp3` files");}).get();
-            BotUtils.autoDelete(msg,event.getClient(),6);
+            BotUtils.sendMessage(event.getChannel(),"You can only add `.mp3` files",10,false);
             return;
         }
         if(attach.getFilesize()>200000){
-            IMessage msg = RequestBuffer.request(() -> {return event.getChannel().sendMessage("File too big, please keep it under 200kb");}).get();
+            BotUtils.sendMessage(event.getChannel(),"File too big, please keep it under 200kb",10,false);
             LoggerService.log("File size: "+attach.getFilesize(),LoggerService.INFO);
-            BotUtils.autoDelete(msg,event.getClient(),6);
             return;
         }
         if(!new File("sfx").exists()){
@@ -173,15 +166,15 @@ public class AudioModule {
             return;
         }
         if(new File("sfx/"+filename).exists()){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("File added successfully!"));
+            BotUtils.sendMessage(event.getChannel(),"File added successfully!",-1,false);
         }else{
-            RequestBuffer.request(() -> event.getChannel().sendMessage("File couldn't be added"));
+            BotUtils.sendMessage(event.getChannel(),"File couldn't be added",30,false);
         }
     }
 
     public static void sfxDelete(MessageReceivedEvent event, List<String> args) {
         if(!event.getAuthor().equals(event.getClient().getApplicationOwner())){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("You can't use that command"));
+            BotUtils.sendMessage(event.getChannel(),"Only the owner of the bot can use that command",30,false);
             return;
         }
         File[] songDir = songsDir(event,File::isFile);
@@ -192,17 +185,17 @@ public class AudioModule {
                                     .collect(Collectors.toList());
         LoggerService.log("Files to delete: "+toDelete.toString(),LoggerService.INFO);
         if(toDelete.size()==0){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query"));
+            BotUtils.sendMessage(event.getChannel(),"No files in the sfx folder match your query",30,false);
         }else if(toDelete.size()>1){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("More than one file fits your query, please be more specific"));
+            BotUtils.sendMessage(event.getChannel(),"More than one file fits your query, please be more specific",30,false);
         }else{
             String name = toDelete.get(0).getName();
             BotUtils.sendFile(event.getChannel(),toDelete.get(0));
             if(toDelete.get(0).delete()){
-                RequestBuffer.request(() -> event.getChannel().sendMessage("Sfx: `"+name+"` deleted!"));
+                BotUtils.sendMessage(event.getChannel(),"Sfx: `"+name+"` deleted!",-1,false);
                 LoggerService.log("Deleted",LoggerService.SUCC);
             }else{
-                RequestBuffer.request(() -> event.getChannel().sendMessage("Sfx: `"+name+"` not deleted"));
+                BotUtils.sendMessage(event.getChannel(),"Sfx: `"+name+"` not deleted",30,false);
                 LoggerService.log("File not deleted",LoggerService.ERROR);
             }
         }
@@ -216,9 +209,9 @@ public class AudioModule {
                 .collect(Collectors.toList());
         LoggerService.log("Files to retrieve: "+toRetrieve.toString(),LoggerService.INFO);
         if(toRetrieve.size()==0){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("No files in the sfx folder match your query"));
+            BotUtils.sendMessage(event.getChannel(),"No files in the sfx folder match your query",30,false);
         }else if(toRetrieve.size()>1){
-            RequestBuffer.request(() -> event.getChannel().sendMessage("More than one file fits your query, please be more specific"));
+            BotUtils.sendMessage(event.getChannel(),"More than one file fits your query, please be more specific",30,false);
         }else{
             BotUtils.sendFile(event.getChannel(), toRetrieve.get(0));
         }
@@ -238,21 +231,3 @@ public class AudioModule {
         return songDir;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
