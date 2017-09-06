@@ -1,5 +1,7 @@
 package com.github.mendess2526.discordbot;
 
+import com.vdurmont.emoji.EmojiParser;
+import sun.rmi.runtime.Log;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelUpdateEvent;
@@ -39,6 +41,8 @@ public class RoleChannels {
         commandMap.put("DELETE", (event, args) -> deleteChannel(args.get(1), event));
 
         commandMap.put("SETALL", (event, args) -> setAll(event));
+
+        commandMap.put("SET", (event, args) -> set(event, args.get(1)));
     }
 
 
@@ -95,7 +99,7 @@ public class RoleChannels {
         if(!success){ch.delete(); return ch;}
 
         // Attempt to change topic
-        String topic = "PRIVATE CHANNEL: "+name;
+        String topic = EmojiParser.parseToUnicode(":lock:");
         RequestBuffer.request(() -> ch.changeTopic(topic));
         try{
             guild.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) -> topic.equals(ch.getTopic()),10,TimeUnit.SECONDS);
@@ -120,13 +124,8 @@ public class RoleChannels {
             return;
         }
         ch = event.getGuild().getChannelByID(id);
-        String[] topic;
-        try{
-            topic = ch.getTopic().split(":");
-        }catch (NullPointerException e){
-            topic = new String[]{"NOT"};
-        }
-        if(topic[0].equals("PRIVATE CHANNEL")){
+        String topic = EmojiParser.parseToAliases(ch.getTopic());
+        if(topic.startsWith(":lock:")){
             LoggerService.log("Name of the channel to delete: "+ch.getName(),LoggerService.INFO);
             RequestBuffer.request(ch::delete);
             try {
@@ -149,10 +148,41 @@ public class RoleChannels {
         EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
         chList.forEach(c -> {
-            RequestBuffer.request(() -> c.changeTopic("PRIVATE CHANNEL: "+c.getName())).get();
+            RequestBuffer.request(() -> c.changeTopic(EmojiParser.parseToUnicode(":lock:")+c.getTopic())).get();
             RequestBuffer.request(() -> c.overrideUserPermissions(event.getGuild().getClient().getOurUser(),readMessages,noPermits)).get();
             BotUtils.sendMessage(event.getChannel(),"Changed topic of "+c.getName(),30,false);
         });
+    }
+
+    //TODO make this pretty
+    private static void set(MessageReceivedEvent event, String name){
+        long id;
+        try {
+            id = Long.parseLong(name.replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
+        }catch (NumberFormatException e){
+            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",30,false);
+            return;
+        }
+        LoggerService.log("Channel id: "+id,LoggerService.INFO);
+        IChannel ch = event.getGuild().getChannelByID(id);
+        LoggerService.log("Channel to change: "+ch.getName(),LoggerService.INFO);
+        String topic = "";
+        if(ch.getTopic()!=null){
+            topic = topic+EmojiParser.parseToAliases(ch.getTopic());
+        }
+        if(topic.startsWith(":lock:")){
+            BotUtils.sendMessage(event.getChannel(),"Already a private channel",30,false);
+            return;
+        }
+        topic = ":lock:"+topic;
+        EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
+        EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
+        IRole everyone = event.getGuild().getEveryoneRole();
+        String finalTopic = topic;
+        RequestBuffer.request(() -> ch.changeTopic(EmojiParser.parseToUnicode(finalTopic))).get();
+        RequestBuffer.request(() -> ch.overrideUserPermissions(event.getGuild().getClient().getOurUser(),readMessages,noPermits)).get();
+        RequestBuffer.request(() -> ch.overrideRolePermissions(everyone,noPermits,readMessages));
+        BotUtils.sendMessage(event.getChannel(),"Changed topic of "+ch.getName(),30,false);
     }
 
 
@@ -164,15 +194,9 @@ public class RoleChannels {
         // Filter out channels that can't be joined
         while (it.hasNext()){
             IChannel c = it.next();
-            String[] topic;
-
-            try{
-                topic = c.getTopic().split(":");
-            }catch (NullPointerException e){
-                topic = new String[]{"NOT"};
-            }
+            String topic = c.getTopic();
             if(c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)
-                    || !topic[0].equals("PRIVATE CHANNEL")){
+                    || topic.startsWith(":lock:")){
                 it.remove();
             }
         }
@@ -276,15 +300,9 @@ public class RoleChannels {
         // Filter out channels that can't be left
         while (it.hasNext()){
             IChannel c = it.next();
-            String[] topic;
-
-            try{
-                topic = c.getTopic().split(":");
-            }catch (NullPointerException e){
-                topic = new String[]{"NOT"};
-            }
+            String topic = c.getTopic();
             if(!c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)
-                    || !topic[0].equals("PRIVATE CHANNEL")){
+                    || !topic.startsWith(":lock:")){
                 it.remove();
             }
         }
