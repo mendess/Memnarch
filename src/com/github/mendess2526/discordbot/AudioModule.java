@@ -33,8 +33,7 @@ public class AudioModule {
 
         commandMap.put("<RETRIEVE", AudioModule::sfxRetrieve);
     }
-
-    public static void sfx(MessageReceivedEvent event, List<String> args) {
+    public static void sfx(MessageReceivedEvent event, List<String> args){
         if (args.size() == 0) {
             HashMap<String, Set<String>> cmds = new HashMap<>();
             Set<String> options = new HashSet<>();
@@ -44,7 +43,13 @@ public class AudioModule {
             BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
             return;
         }
-
+        if(args.get(0).startsWith("<")){
+            commandMap.get(args.get(0)).runCommand(event,args);
+        }else{
+            sfxPlay(event,args);
+        }
+    }
+    public static void sfxPlay(MessageReceivedEvent event, List<String> args) {
         IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
         if (vChannel == null) {
             BotUtils.sendMessage(event.getChannel(), "Please join a voice channel before using this command!", 10, false);

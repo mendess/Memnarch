@@ -14,6 +14,7 @@ import sx.blah.discord.util.RequestBuffer;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class RoleChannels {
@@ -21,10 +22,13 @@ public class RoleChannels {
     static final int JOIN = 0;
     static final int LEAVE = 1;
 
+    static final String PRIVATE_MARKER = ">";
+
     static final String[] NUMBERS = {":one:",":two:",":three:",":four:",":five:",":six:"};
 
     public static Map<String,Command> commandMap = new HashMap<>();
 
+    //TODO make this pretty
     static {
         commandMap.put("NEW",(event, args) -> {
             IChannel ch = newChannel(args.get(1), event.getGuild());
@@ -43,6 +47,10 @@ public class RoleChannels {
         commandMap.put("SETALL", (event, args) -> setAll(event));
 
         commandMap.put("SET", (event, args) -> set(event, args.get(1)));
+
+        commandMap.put("UNSET", (event, args) -> unSet(event,args.get(1)));
+
+        commandMap.put("CONVERT", RoleChannels::convert);
     }
 
 
@@ -99,7 +107,7 @@ public class RoleChannels {
         if(!success){ch.delete(); return ch;}
 
         // Attempt to change topic
-        String topic = EmojiParser.parseToUnicode(":lock:");
+        String topic = PRIVATE_MARKER+ch.getName();
         RequestBuffer.request(() -> ch.changeTopic(topic));
         try{
             guild.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) -> topic.equals(ch.getTopic()),10,TimeUnit.SECONDS);
@@ -125,7 +133,7 @@ public class RoleChannels {
         }
         ch = event.getGuild().getChannelByID(id);
         String topic = EmojiParser.parseToAliases(ch.getTopic());
-        if(topic.startsWith(":lock:")){
+        if(topic.startsWith(PRIVATE_MARKER)){
             LoggerService.log("Name of the channel to delete: "+ch.getName(),LoggerService.INFO);
             RequestBuffer.request(ch::delete);
             try {
@@ -148,12 +156,11 @@ public class RoleChannels {
         EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
         chList.forEach(c -> {
-            RequestBuffer.request(() -> c.changeTopic(EmojiParser.parseToUnicode(":lock:")+c.getTopic())).get();
+            RequestBuffer.request(() -> c.changeTopic(PRIVATE_MARKER+c.getTopic())).get();
             RequestBuffer.request(() -> c.overrideUserPermissions(event.getGuild().getClient().getOurUser(),readMessages,noPermits)).get();
             BotUtils.sendMessage(event.getChannel(),"Changed topic of "+c.getName(),30,false);
         });
     }
-
     //TODO make this pretty
     private static void set(MessageReceivedEvent event, String name){
         long id;
@@ -166,41 +173,125 @@ public class RoleChannels {
         LoggerService.log("Channel id: "+id,LoggerService.INFO);
         IChannel ch = event.getGuild().getChannelByID(id);
         LoggerService.log("Channel to change: "+ch.getName(),LoggerService.INFO);
-        String topic = "";
-        if(ch.getTopic()!=null){
-            topic = topic+EmojiParser.parseToAliases(ch.getTopic());
-        }
-        if(topic.startsWith(":lock:")){
+
+        if(ch.getTopic()!=null && ch.getTopic().startsWith(PRIVATE_MARKER)){
             BotUtils.sendMessage(event.getChannel(),"Already a private channel",30,false);
             return;
         }
-        topic = ":lock:"+topic;
+        String newTopic = PRIVATE_MARKER + (ch.getTopic()!=null ? ch.getTopic() : "");
         EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
         IRole everyone = event.getGuild().getEveryoneRole();
-        String finalTopic = topic;
-        RequestBuffer.request(() -> ch.changeTopic(EmojiParser.parseToUnicode(finalTopic))).get();
+
+        RequestBuffer.request(() -> ch.changeTopic(newTopic)).get();
         RequestBuffer.request(() -> ch.overrideUserPermissions(event.getGuild().getClient().getOurUser(),readMessages,noPermits)).get();
         RequestBuffer.request(() -> ch.overrideRolePermissions(everyone,noPermits,readMessages));
-        BotUtils.sendMessage(event.getChannel(),"Changed topic of "+ch.getName(),30,false);
+        BotUtils.sendMessage(event.getChannel(),ch.getName()+" is now private!",-1,false);
     }
 
+    private static void unSet(MessageReceivedEvent event, String name){
+        long id;
+        try {
+            id = Long.parseLong(name.replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
+        }catch (NumberFormatException e){
+            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",30,false);
+            return;
+        }
+        LoggerService.log("Channel id: "+id,LoggerService.INFO);
+        IChannel ch = event.getGuild().getChannelByID(id);
+        LoggerService.log("Channel to change: "+ch.getName(),LoggerService.INFO);
+
+        if(ch.getTopic()==null || !ch.getTopic().startsWith(PRIVATE_MARKER)){
+            BotUtils.sendMessage(event.getChannel(),"Not a private channel",30,false);
+            return;
+        }
+        String newTopic = ch.getTopic().replaceFirst(PRIVATE_MARKER,"");
+        EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
+        EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
+        IRole everyone = event.getGuild().getEveryoneRole();
+        LoggerService.log("Un-setting topic",LoggerService.INFO);
+        RequestBuffer.request(() -> ch.changeTopic(newTopic)).get();
+        RequestBuffer.request(() -> ch.overrideRolePermissions(everyone,readMessages,noPermits));
+        event.getGuild().getUsers().stream()
+                                   .filter(user -> ch.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES))
+                                   .forEach(user -> RequestBuffer.request(() -> ch.removePermissionsOverride(user)));
+        BotUtils.sendMessage(event.getChannel(),ch.getName()+" is now public!",-1,false);
+    }
+
+    private static void convert(MessageReceivedEvent event, List<String> args){
+        args.remove(0);
+        String oldMarker = String.join(" ", args);
+        LoggerService.log("Converting "+oldMarker+" to "+PRIVATE_MARKER,LoggerService.INFO);
+        List<IChannel> chList = event.getGuild().getChannels();
+        chList.stream()
+                .filter(c -> c.getTopic()!=null && c.getTopic().startsWith(oldMarker))
+                .forEach(c -> {
+                    LoggerService.log("Converting "+c.getName(),LoggerService.INFO);
+                    String nTopic = c.getTopic().replace(oldMarker,PRIVATE_MARKER);
+                    RequestBuffer.request(() -> c.changeTopic(nTopic));
+                    try {
+                        c.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) -> c.getTopic().startsWith(PRIVATE_MARKER),5,TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        LoggerService.log("Interrupted when converting channel "+c.getName(),LoggerService.ERROR);
+                        e.printStackTrace();
+                    }
+                    if(!c.getTopic().startsWith(PRIVATE_MARKER)){
+                        BotUtils.sendMessage(event.getChannel(),"Couldn't convert "+c.getName()+". Try to rerun the command",30,false);
+                    }
+                });
+    }
 
     // Join
     private static List<IChannel> joinableChannels(IGuild guild, IUser user){
         List<IChannel> chList = guild.getChannels();
         Iterator<IChannel> it = chList.iterator();
-
         // Filter out channels that can't be joined
         while (it.hasNext()){
             IChannel c = it.next();
-            String topic = c.getTopic();
-            if(c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)
-                    || topic.startsWith(":lock:")){
+            String topic = "";
+            if(c.getTopic() == null) {
                 it.remove();
+            }else{
+                topic = topic+c.getTopic();
+                if(topic.startsWith(PRIVATE_MARKER)){
+                    if(c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)){
+                        LoggerService.log("Channel "+c.getName()+" removed because user can see it",LoggerService.INFO);
+                        it.remove();
+                    }
+                }else{
+                    LoggerService.log("Channel "+c.getName()+" removed for not starting with "+PRIVATE_MARKER,LoggerService.INFO);
+                    it.remove();
+                }
             }
         }
         return chList;
+        /*
+        for(IChannel c : chList){
+            if(c.getTopic()==null){
+                chList.remove(c);
+            }else{
+                String topic = "";
+                topic = topic+EmojiParser.parseToAliases(c.getTopic());
+                String finalTopic = topic;
+                RequestBuffer.request(() -> guild.getChannels().get(0).sendMessage("c.getTopic: "+c.getTopic()+" | Topic: "+ finalTopic)).get();
+                if(c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES) || !topic.startsWith(":lock:")){
+                    LoggerService.log("Removing "+c.getName()+" from joinable's",LoggerService.INFO);
+                    LoggerService.log("Topic "+topic,LoggerService.INFO);
+                    LoggerService.log("Conditions:",LoggerService.INFO);
+                    LoggerService.log("Permissions: "+c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES),LoggerService.INFO);
+                    LoggerService.log("!StartsWith "+topic+" : "+(!topic.startsWith(":lock:")),LoggerService.INFO);
+                    chList.remove(c);
+                }
+            }
+        }
+        return chList;
+        */
+        /*
+        return chList.stream().filter(c -> c.getTopic()!=null
+                                      && !c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)
+                                      && c.getTopic().startsWith(":lock:"))
+                              .collect(Collectors.toList());
+        */
     }
 
     private static void showJoinableChannels(IMessage message, IUser user, int page) {
@@ -300,10 +391,20 @@ public class RoleChannels {
         // Filter out channels that can't be left
         while (it.hasNext()){
             IChannel c = it.next();
-            String topic = c.getTopic();
-            if(!c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)
-                    || !topic.startsWith(":lock:")){
+            String topic = "";
+            if(c.getTopic() == null) {
                 it.remove();
+            }else{
+                topic = topic+c.getTopic();
+                if(topic.startsWith(PRIVATE_MARKER)){
+                    if(!c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)){
+                        LoggerService.log("Channel "+c.getName()+" removed because user can't see it",LoggerService.INFO);
+                        it.remove();
+                    }
+                }else{
+                    LoggerService.log("Channel "+c.getName()+" removed for not starting with "+PRIVATE_MARKER,LoggerService.INFO);
+                    it.remove();
+                }
             }
         }
         return chList;
@@ -332,7 +433,7 @@ public class RoleChannels {
     }
 
     private static void removeUser(IChannel ch, IUser user) {
-        RequestBuffer.request(() ->ch.overrideUserPermissions(user,EnumSet.noneOf(Permissions.class),EnumSet.of(Permissions.READ_MESSAGES)));
+        RequestBuffer.request(() ->ch.removePermissionsOverride(user));
     }
 
     public static void leave(ReactionEvent event) {
