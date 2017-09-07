@@ -1,6 +1,10 @@
 package com.github.mendess2526.discordbot;
 
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -29,8 +33,17 @@ public class LoggerService {
         }
         message = sdf.format(new Date()) + message;
         logToConsole(message,type);
+        logToFile(message);
     }
-
+    private static void logToFile(String message){
+        try {
+            Writer writer = new BufferedWriter(new FileWriter("log.txt", true));
+            writer.write( message + System.lineSeparator());
+            writer.close();
+        } catch (IOException e) {
+            LoggerService.logToConsole(e.getMessage(),LoggerService.ERROR);
+        }
+    }
     private static void logToConsole(String message, int type) {
         final String ANSI_RESET = " \u001B[0m ";
         final String ANSI_RED = " \u001B[31m ";

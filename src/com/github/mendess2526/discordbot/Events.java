@@ -33,6 +33,8 @@ public class Events {
 
         miscMap.put("RESTART",MiscCommands::restart);
 
+        miscMap.put("WHOAREYOU",MiscCommands::whoareyou);
+
         rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
 
         rolechannelsMap.put("JOIN", RoleChannels::showJoinableChannels);
@@ -61,8 +63,10 @@ public class Events {
                     LoggerService.log(event.getUser().getName()+" clicked an :heavy_multiplication_x:",LoggerService.INFO);
                     event.getMessage().delete();
                 }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
+                    //BotUtils.waitForReaction(event.getMessage(),"heavy_multiplication_x");
                     RoleChannels.join(event);
                 }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to leave!")) {
+                    //BotUtils.waitForReaction(event.getMessage(),"heavy_multiplication_x");
                     RoleChannels.leave(event);
                 }
             }
@@ -112,7 +116,7 @@ public class Events {
                                  .toArray(new String[0]);
         if(key.length>1){
             BotUtils.contactOwner(event,"More then one command with the same name: "+event.getMessage().getContent());
-            LoggerService.log("There is more than one command group with the same command",LoggerService.ERROR);
+            LoggerService.log("There is more than one command group with the same command, contacting owner",LoggerService.ERROR);
             return;
         }
         if(key.length==1 && commandMap.containsKey(key[0]) && commandMap.get(key[0]).containsKey(cmd)){

@@ -73,6 +73,7 @@ public class AudioModule {
         audioP.clear();
 
         vChannel.join();
+        LoggerService.log("Songs that match: "+ Arrays.toString(songDir),LoggerService.INFO);
         try {
             audioP.queue(songDir[0]);
         } catch (IOException e) {
@@ -182,12 +183,10 @@ public class AudioModule {
             BotUtils.sendMessage(event.getChannel(),"Only the owner of the bot can use that command",30,false);
             return;
         }
-        File[] songDir = songsDir(event,File::isFile);
         String searchStr = String.join(" ", args);
+        File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));
 
-        List<File> toDelete = Arrays.stream(songDir)
-                                    .filter(s -> s.getName().toUpperCase().contains(searchStr))
-                                    .collect(Collectors.toList());
+        List<File> toDelete = Arrays.asList(songDir);
         LoggerService.log("Files to delete: "+toDelete.toString(),LoggerService.INFO);
         if(toDelete.size()==0){
             BotUtils.sendMessage(event.getChannel(),"No files in the sfx folder match your query",30,false);
@@ -205,13 +204,12 @@ public class AudioModule {
             }
         }
     }
-    public static void sfxRetrieve(MessageReceivedEvent event, List<String> args){
-        File[] songDir = songsDir(event,File::isFile);
-        String searchStr = String.join(" ", args);
 
-        List<File> toRetrieve = Arrays.stream(songDir)
-                .filter(s -> s.getName().toUpperCase().contains(searchStr))
-                .collect(Collectors.toList());
+    public static void sfxRetrieve(MessageReceivedEvent event, List<String> args){
+        String searchStr = String.join(" ", args);
+        File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));
+
+        List<File> toRetrieve = Arrays.asList(songDir);
         LoggerService.log("Files to retrieve: "+toRetrieve.toString(),LoggerService.INFO);
         if(toRetrieve.size()==0){
             BotUtils.sendMessage(event.getChannel(),"No files in the sfx folder match your query",30,false);
@@ -221,6 +219,7 @@ public class AudioModule {
             BotUtils.sendFile(event.getChannel(), toRetrieve.get(0));
         }
     }
+
     public static File[] songsDir(MessageReceivedEvent event, FileFilter filter){
         File[] songDir = new File("sfx").listFiles(filter);
         if(songDir == null){

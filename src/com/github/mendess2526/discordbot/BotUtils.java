@@ -5,6 +5,7 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.Event;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
@@ -79,7 +80,16 @@ public class BotUtils {
     public static void closeButton(IMessage msg){
         RequestBuffer.request(() -> msg.addReaction(":heavy_multiplication_x:")).get();
     }
-
+    public static void waitForReaction(IMessage msg, String reaction){
+        if(msg.getReactionByUnicode(reaction)==null){
+            try {
+                msg.getClient().getDispatcher().waitFor((ReactionEvent e) -> msg.getReactionByUnicode(reaction)==null,2,TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                LoggerService.log("Interrupted while waiting for close button",LoggerService.ERROR);
+                e.printStackTrace();
+            }
+        }
+    }
     public static void help(IUser user, IChannel channel, Map<String,Set<String>> commands) {
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of available commands for:");

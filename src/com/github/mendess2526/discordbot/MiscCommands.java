@@ -40,4 +40,8 @@ public class MiscCommands {
         }
         client.login();
     }
+
+    public static void whoareyou(MessageReceivedEvent event, List<String> strings) {
+        BotUtils.sendMessage(event.getChannel(),new EmbedBuilder().withTitle("I AM MEMNARCH").withImage("http://magiccards.info/scans/en/arc/112.jpg").build(),-1,true);
+    }
 }
