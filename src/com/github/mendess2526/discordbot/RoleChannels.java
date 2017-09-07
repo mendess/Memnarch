@@ -187,7 +187,7 @@ public class RoleChannels {
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
         IRole everyone = event.getGuild().getEveryoneRole();
         IUser ourUser = event.getGuild().getClient().getOurUser();
-        LoggerService.log("Changing topic from: "+ch.getTopic()+" to: "+newTopic+"\nAnd overriding permissions.",LoggerService.INFO);
+        LoggerService.log(String.format("Changing topic from: "+ch.getTopic()+" to: "+newTopic+"\n%27sAnd overriding permissions."," "),LoggerService.INFO);
         RequestBuffer.request(() -> ch.changeTopic(newTopic)).get();
         RequestBuffer.request(() -> ch.overrideUserPermissions(ourUser,readMessages,noPermits)).get();
         RequestBuffer.request(() -> ch.overrideRolePermissions(everyone,noPermits,readMessages));
@@ -214,7 +214,7 @@ public class RoleChannels {
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
         IRole everyone = event.getGuild().getEveryoneRole();
 
-        LoggerService.log("Changing topic from: "+ch.getTopic()+" to: "+newTopic+"\nAnd overriding permissions.",LoggerService.INFO);
+        LoggerService.log(String.format("Changing topic from: "+ch.getTopic()+" to: "+newTopic+"\n%27sAnd overriding permissions."," "),LoggerService.INFO);
         RequestBuffer.request(() -> ch.changeTopic(newTopic)).get();
         RequestBuffer.request(() -> ch.overrideRolePermissions(everyone,readMessages,noPermits));
         event.getGuild().getUsers().stream()
