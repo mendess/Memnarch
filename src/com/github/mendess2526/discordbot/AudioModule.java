@@ -73,14 +73,14 @@ public class AudioModule {
         audioP.clear();
 
         vChannel.join();
-        LoggerService.log("Songs that match: "+ Arrays.toString(songDir),LoggerService.INFO);
+        LoggerService.log(event.getGuild(),"Songs that match: "+ Arrays.toString(songDir),LoggerService.INFO);
         try {
             audioP.queue(songDir[0]);
         } catch (IOException e) {
-            LoggerService.log(e.getMessage(), LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),e.getMessage(), LoggerService.ERROR);
             BotUtils.sendMessage(event.getChannel(), "There was a problem playing that sound.", 30, false);
         } catch (UnsupportedAudioFileException e) {
-            LoggerService.log(e.getMessage(), LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),e.getMessage(), LoggerService.ERROR);
             BotUtils.sendMessage(event.getChannel(), "There was a problem playing that sound.", 30, false);
             e.printStackTrace();
         }
@@ -138,7 +138,7 @@ public class AudioModule {
         }
         if(attach.getFilesize()>200000){
             BotUtils.sendMessage(event.getChannel(),"File too big, please keep it under 200kb",10,false);
-            LoggerService.log("File size: "+attach.getFilesize(),LoggerService.INFO);
+            LoggerService.log(event.getGuild(),"File size: "+attach.getFilesize(),LoggerService.INFO);
             return;
         }
         if(!new File("sfx").exists()){
@@ -147,7 +147,7 @@ public class AudioModule {
             }
         }
         String filename = attach.getFilename().replaceAll(Pattern.quote("_")," ");
-        LoggerService.log("Filepath: sfx/"+filename,LoggerService.INFO);
+        LoggerService.log(event.getGuild(),"Filepath: sfx/"+filename,LoggerService.INFO);
         URL url;
         ReadableByteChannel rbc;
         FileOutputStream fos;
@@ -159,15 +159,15 @@ public class AudioModule {
             fos = new FileOutputStream("sfx/"+filename);
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         } catch (MalformedURLException e) {
-            LoggerService.log("Malformed Url: \""+attach.getUrl()+"\" File: "+filename,LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),"Malformed Url: \""+attach.getUrl()+"\" File: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
         } catch (FileNotFoundException e) {
-            LoggerService.log("File not found: "+filename,LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),"File not found: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
         } catch (IOException e) {
-            LoggerService.log("IOException for file: "+filename,LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),"IOException for file: "+filename,LoggerService.ERROR);
             e.printStackTrace();
             return;
         }
@@ -183,11 +183,12 @@ public class AudioModule {
             BotUtils.sendMessage(event.getChannel(),"Only the owner of the bot can use that command",30,false);
             return;
         }
+        args.remove(0);
         String searchStr = String.join(" ", args);
         File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));
 
         List<File> toDelete = Arrays.asList(songDir);
-        LoggerService.log("Files to delete: "+toDelete.toString(),LoggerService.INFO);
+        LoggerService.log(event.getGuild(),"Files to delete: "+toDelete.toString(),LoggerService.INFO);
         if(toDelete.size()==0){
             BotUtils.sendMessage(event.getChannel(),"No files in the sfx folder match your query",30,false);
         }else if(toDelete.size()>1){
@@ -197,20 +198,21 @@ public class AudioModule {
             BotUtils.sendFile(event.getChannel(),toDelete.get(0));
             if(toDelete.get(0).delete()){
                 BotUtils.sendMessage(event.getChannel(),"Sfx: `"+name+"` deleted!",-1,false);
-                LoggerService.log("Deleted",LoggerService.SUCC);
+                LoggerService.log(event.getGuild(),"Deleted",LoggerService.SUCC);
             }else{
                 BotUtils.sendMessage(event.getChannel(),"Sfx: `"+name+"` not deleted",30,false);
-                LoggerService.log("File not deleted",LoggerService.ERROR);
+                LoggerService.log(event.getGuild(),"File not deleted",LoggerService.ERROR);
             }
         }
     }
 
     public static void sfxRetrieve(MessageReceivedEvent event, List<String> args){
+        args.remove(0);
         String searchStr = String.join(" ", args);
         File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));
 
         List<File> toRetrieve = Arrays.asList(songDir);
-        LoggerService.log("Files to retrieve: "+toRetrieve.toString(),LoggerService.INFO);
+        LoggerService.log(event.getGuild(),"Files to retrieve: "+toRetrieve.toString(),LoggerService.INFO);
         if(toRetrieve.size()==0){
             BotUtils.sendMessage(event.getChannel(),"No files in the sfx folder match your query",30,false);
         }else if(toRetrieve.size()>1){
@@ -230,7 +232,7 @@ public class AudioModule {
         }
         if(songDir == null){
             BotUtils.contactOwner(event,"Couldn't create sfx folder");
-            LoggerService.log("Couldn't create sfx folder",LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),"Couldn't create sfx folder",LoggerService.ERROR);
         }
         return songDir;
     }

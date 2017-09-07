@@ -28,7 +28,7 @@ public class BotUtils {
             TimeUnit.SECONDS.sleep(delay);
             client.getDispatcher().waitFor(MessageReceivedEvent.class,30,TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            LoggerService.log("Interrupted while waiting for a Message received event on sfxadd",LoggerService.ERROR);
+            LoggerService.log(msg.getGuild(),"Interrupted while waiting for a Message received event on sfxadd",LoggerService.ERROR);
         }
         msg.delete();
     }
@@ -71,7 +71,7 @@ public class BotUtils {
             try {
                 ch.sendFile(file);
             } catch (FileNotFoundException e) {
-                LoggerService.log("File not found when sending to channel",LoggerService.ERROR);
+                LoggerService.log(ch.getGuild(),"File not found when sending to channel",LoggerService.ERROR);
                 e.printStackTrace();
             }
         }).get();
@@ -85,7 +85,7 @@ public class BotUtils {
             try {
                 msg.getClient().getDispatcher().waitFor((ReactionEvent e) -> msg.getReactionByUnicode(reaction)==null,2,TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                LoggerService.log("Interrupted while waiting for close button",LoggerService.ERROR);
+                LoggerService.log(msg.getGuild(),"Interrupted while waiting for close button",LoggerService.ERROR);
                 e.printStackTrace();
             }
         }

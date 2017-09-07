@@ -35,7 +35,7 @@ public class MiscCommands {
         try {
             TimeUnit.SECONDS.sleep(5);
         } catch (InterruptedException e) {
-            LoggerService.log("Interrupted while restarting",LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),"Interrupted while restarting",LoggerService.ERROR);
             e.printStackTrace();
         }
         client.login();

@@ -60,7 +60,7 @@ public class Events {
             List<IUser> mentions = event.getMessage().getMentions();
             if(mentions.isEmpty() || mentions.contains(event.getUser())){
                 if(event.getReaction().getUnicodeEmoji().getAliases().get(0).equals("heavy_multiplication_x")){
-                    LoggerService.log(event.getUser().getName()+" clicked an :heavy_multiplication_x:",LoggerService.INFO);
+                    LoggerService.log(event.getGuild(),event.getUser().getName()+" clicked an :heavy_multiplication_x:",LoggerService.INFO);
                     event.getMessage().delete();
                 }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
                     //BotUtils.waitForReaction(event.getMessage(),"heavy_multiplication_x");
@@ -74,7 +74,7 @@ public class Events {
     }
     @EventSubscriber
     public void handleTrackFinished(TrackFinishEvent event){
-        LoggerService.log("Scheduling leave",LoggerService.INFO);
+        LoggerService.log(event.getPlayer().getGuild(),"Scheduling leave",LoggerService.INFO);
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
         Main.leaveVoice = executor.schedule(leave,30, TimeUnit.MINUTES);
@@ -83,7 +83,7 @@ public class Events {
     public void handleTrackStarted(TrackStartEvent event){
         if(Main.leaveVoice != null){
             Main.leaveVoice.cancel(true);
-            LoggerService.log("Leave canceled",LoggerService.INFO);
+            LoggerService.log(event.getPlayer().getGuild(),"Leave canceled",LoggerService.INFO);
         }
     }
     @EventSubscriber
@@ -103,7 +103,7 @@ public class Events {
         if(!command[0].startsWith(BOT_PREFIX)){
             return;
         }else{
-            LoggerService.log("Command: "+ Arrays.toString(command),LoggerService.INFO);
+            LoggerService.log(event.getGuild(),"Command: "+ Arrays.toString(command),LoggerService.INFO);
         }
         String cmd = command[0].substring(1);
 
@@ -116,14 +116,14 @@ public class Events {
                                  .toArray(new String[0]);
         if(key.length>1){
             BotUtils.contactOwner(event,"More then one command with the same name: "+event.getMessage().getContent());
-            LoggerService.log("There is more than one command group with the same command, contacting owner",LoggerService.ERROR);
+            LoggerService.log(event.getGuild(),"There is more than one command group with the same command, contacting owner",LoggerService.ERROR);
             return;
         }
         if(key.length==1 && commandMap.containsKey(key[0]) && commandMap.get(key[0]).containsKey(cmd)){
-            LoggerService.log("Valid command: "+cmd, LoggerService.INFO);
+            LoggerService.log(event.getGuild(),"Valid command: "+cmd, LoggerService.INFO);
             commandMap.get(key[0]).get(cmd).runCommand(event,args);
         }else{
-            LoggerService.log("Invalid command "+cmd, LoggerService.INFO);
+            LoggerService.log(event.getGuild(),"Invalid command "+cmd, LoggerService.INFO);
         }
     }
 }

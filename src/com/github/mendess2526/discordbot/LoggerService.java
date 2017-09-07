@@ -1,6 +1,8 @@
 package com.github.mendess2526.discordbot;
 
 
+import sx.blah.discord.handle.obj.IGuild;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -15,7 +17,7 @@ public class LoggerService {
     static final int ERROR = 2;
     static final int SUCC = 3;
 
-    public static void log(String message, int type){
+    public static void log(IGuild guild, String message, int type){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         switch (type) {
             case LoggerService.INFO:
@@ -31,7 +33,8 @@ public class LoggerService {
                 message = " XXX - " + message;
                 break;
         }
-        message = sdf.format(new Date()) + message;
+        String gName = guild!=null ? "["+guild.getName()+"]:" : "[MAIN]:";
+        message = sdf.format(new Date())+gName+message;
         logToConsole(message,type);
         logToFile(message);
     }
