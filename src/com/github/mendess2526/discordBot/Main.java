@@ -17,7 +17,7 @@ public class Main {
         try{
             cfg = new Config();
         }catch (IOException e){
-            LoggerService.log("Can't find file " + e.getMessage(),LoggerService.ERROR);
+            LoggerService.log(null,"Can't find file " + e.getMessage(),LoggerService.ERROR);
             return;
         }
         String token = cfg.getToken();
@@ -28,7 +28,7 @@ public class Main {
             client.getDispatcher().registerListener(new Events());
             //TODO make restart more fun
         }else{
-            LoggerService.log("Client is null! Maybe you didn't add the token to settings.ini?",LoggerService.ERROR);
+            LoggerService.log(null,"Client is null! Maybe you didn't add the token to settings.ini?",LoggerService.ERROR);
         }
     }
     private static IDiscordClient createClient(String token){

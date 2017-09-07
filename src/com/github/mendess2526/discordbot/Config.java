@@ -12,21 +12,21 @@ public class Config {
 
     public Config() throws IOException {
 
-        LoggerService.log("Reading from Ini",LoggerService.INFO);
+        LoggerService.log(null,"Reading from Ini",LoggerService.INFO);
         Wini iniFile;
         try{
             iniFile = new Wini(new File("./settings.ini"));
         }catch (IOException e){
-            LoggerService.log(e.getMessage(), LoggerService.ERROR);
+            LoggerService.log(null,e.getMessage(), LoggerService.ERROR);
             return;
         }
         try{
             this.token = iniFile.get("connection","token",String.class);
         }catch (Exception e){
-            LoggerService.log(e.getMessage(),LoggerService.ERROR);
+            LoggerService.log(null,e.getMessage(),LoggerService.ERROR);
             return;
         }
-        LoggerService.log("ini read!",LoggerService.SUCC);
+        LoggerService.log(null,"ini read!",LoggerService.SUCC);
     }
 
     public String getToken() {
