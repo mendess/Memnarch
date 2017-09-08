@@ -1,7 +1,10 @@
 package com.github.mendess2526.discordbot;
 
 import org.apache.commons.lang3.text.WordUtils;
+import sx.blah.discord.api.events.Event;
+import sx.blah.discord.handle.impl.events.guild.GuildEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.handle.obj.Permissions;
@@ -10,6 +13,7 @@ import sx.blah.discord.util.audio.AudioPlayer;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -222,7 +226,7 @@ public class AudioModule {
         }
     }
 
-    public static File[] songsDir(MessageReceivedEvent event, FileFilter filter){
+    public static File[] songsDir(Event event, FileFilter filter){
         File[] songDir = new File("sfx").listFiles(filter);
         if(songDir == null){
             boolean success = (new File("sfx")).mkdirs();
@@ -231,8 +235,14 @@ public class AudioModule {
             }
         }
         if(songDir == null){
+            IGuild guild;
+            if(event instanceof GuildEvent){
+                guild = ((GuildEvent) event).getGuild();
+            }else{
+                guild = null;
+            }
             BotUtils.contactOwner(event,"Couldn't create sfx folder");
-            LoggerService.log(event.getGuild(),"Couldn't create sfx folder",LoggerService.ERROR);
+            LoggerService.log(guild,"Couldn't create sfx folder",LoggerService.ERROR);
         }
         return songDir;
     }

@@ -3,11 +3,15 @@ package com.github.mendess2526.discordbot;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
+import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelLeaveEvent;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.RequestBuffer;
+import sx.blah.discord.util.audio.AudioPlayer;
 import sx.blah.discord.util.audio.events.TrackFinishEvent;
 import sx.blah.discord.util.audio.events.TrackStartEvent;
 
+import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -21,6 +25,7 @@ public class Events {
     public static Map<String, Command> miscMap = new HashMap<>();
     public static Map<String, Command> sfxMap = new HashMap<>();
     public static Map<String, Command> rolechannelsMap = new HashMap<>();
+    //public static Map<String, Command> greetingsMap = new HashMap<>();
 
     public static Map<String, Map<String, Command>> commandMap = new HashMap<>();
 
@@ -45,9 +50,12 @@ public class Events {
 
         sfxMap.put("SFXLIST", AudioModule::sfxlist);
 
+        //greetingsMap.put("GREETME", Greetings::toggle);
+
         commandMap.put("Miscellaneous",miscMap);
         commandMap.put("Sfx",sfxMap);
         commandMap.put("Rolechannels",rolechannelsMap);
+        //commandMap.put("Greetings",greetingsMap);
 
     }
     //TODO Greetings
@@ -70,6 +78,26 @@ public class Events {
                     RoleChannels.leave(event);
                 }
             }
+        }
+    }
+    @EventSubscriber
+    public void handleUserJoin(UserVoiceChannelJoinEvent event) throws InterruptedException {
+        if(event.getUser().isBot()){
+            return;
+        }
+        Random rand = new Random();
+        int randomNum = rand.nextInt(128);
+        LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.INFO);
+        if(randomNum<2){
+            TimeUnit.SECONDS.sleep(1);
+            Greetings.greet(event);
+        }
+    }
+    @EventSubscriber
+    public void handleUserLeave(UserVoiceChannelLeaveEvent event){
+        if(event.getVoiceChannel().getConnectedUsers().contains(event.getClient().getOurUser())
+            && event.getVoiceChannel().getConnectedUsers().size()==1){
+            event.getVoiceChannel().leave();
         }
     }
     @EventSubscriber
