@@ -180,7 +180,10 @@ public class Greetings {
         }
     }
     public boolean isGreetable(Long longID) {
-        return iniFile.get(longID.toString()).get("enabled",boolean.class);
+        if(iniFile.containsKey(longID.toString())){
+            return iniFile.get(longID.toString()).get("enabled",boolean.class);
+        }
+        return false;
     }
     public void addGreeting(MessageReceivedEvent event, String searchStr){
         if(searchStr.length()==0){
