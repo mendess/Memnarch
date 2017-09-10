@@ -1,17 +1,17 @@
 package com.github.mendess2526.discordbot;
 
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelLeaveEvent;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.RequestBuffer;
-import sx.blah.discord.util.audio.AudioPlayer;
 import sx.blah.discord.util.audio.events.TrackFinishEvent;
 import sx.blah.discord.util.audio.events.TrackStartEvent;
 
-import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,42 +25,43 @@ public class Events {
     public static Map<String, Command> miscMap = new HashMap<>();
     public static Map<String, Command> sfxMap = new HashMap<>();
     public static Map<String, Command> rolechannelsMap = new HashMap<>();
-    //public static Map<String, Command> greetingsMap = new HashMap<>();
+    public static Map<String, Command> greetingsMap = new HashMap<>();
+    public static Map<String, Command> serverSettingsMap = new HashMap<>();
 
     public static Map<String, Map<String, Command>> commandMap = new HashMap<>();
 
     static {
         miscMap.put("HELP", MiscCommands::help);
-
         miscMap.put("PING", MiscCommands::ping);
-
         miscMap.put("HI", MiscCommands::hi);
-
         miscMap.put("RESTART",MiscCommands::restart);
-
         miscMap.put("WHOAREYOU",MiscCommands::whoareyou);
 
         rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
-
         rolechannelsMap.put("JOIN", RoleChannels::showJoinableChannels);
-
         rolechannelsMap.put("LEAVE", RoleChannels::showLeavableChannels);
 
-        sfxMap.put("SFX", AudioModule::sfx);
+        sfxMap.put("SFX", SfxModule::sfx);
+        sfxMap.put("SFXLIST", SfxModule::sfxlist);
 
-        sfxMap.put("SFXLIST", AudioModule::sfxlist);
+        greetingsMap.put("GREET",Greetings::greetings);
 
-        //greetingsMap.put("GREETME", Greetings::toggle);
+        serverSettingsMap.put("SERVERSET",ServerSettings::serverSettings);
 
         commandMap.put("Miscellaneous",miscMap);
         commandMap.put("Sfx",sfxMap);
         commandMap.put("Rolechannels",rolechannelsMap);
-        //commandMap.put("Greetings",greetingsMap);
+        commandMap.put("Greetings",greetingsMap);
+        commandMap.put("Server Settings",serverSettingsMap);
 
     }
-    //TODO Greetings
     @EventSubscriber
-    public void handleReactionEvent(ReactionEvent event) {
+    public void guildJoin(GuildCreateEvent event){
+        Main.initialiseGreetings(event.getGuild());
+        Main.initialiseServerSettings(event.getGuild());
+    }
+    @EventSubscriber
+    public void reactionEvent(ReactionEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
         if(event.getReaction().getUserReacted(event.getClient().getOurUser()) &&
                 !(event.getUser().equals(event.getClient().getOurUser()))){
@@ -81,41 +82,56 @@ public class Events {
         }
     }
     @EventSubscriber
-    public void handleUserJoin(UserVoiceChannelJoinEvent event) throws InterruptedException {
-        if(event.getUser().isBot()){
-            return;
-        }
-        Random rand = new Random();
-        int randomNum = rand.nextInt(128);
-        LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.INFO);
-        if(randomNum<2){
-            TimeUnit.SECONDS.sleep(1);
-            Greetings.greet(event);
+    public void userGuildJoin(UserJoinEvent event){
+        if(Main.serverSettings.get(event.getGuild().getLongID()).messagesNewUsers()){
+            String msg = Main.serverSettings.get(event.getGuild().getLongID()).getNewUserMessage();
+            event.getUser().getOrCreatePMChannel().sendMessage(msg);
         }
     }
     @EventSubscriber
-    public void handleUserLeave(UserVoiceChannelLeaveEvent event){
+    public void userVoiceJoin(UserVoiceChannelJoinEvent event) throws InterruptedException {
+        if(Greetings.canGreet(event)){
+            TimeUnit.MILLISECONDS.sleep(500);
+            if(event.getUser().isBot()){
+                return;
+            }
+            if(Main.greetings.get(event.getGuild().getLongID()).isGreetable(event.getUser().getLongID())){
+                Main.greetings.get(event.getGuild().getLongID()).greet(event);
+                return;
+            }
+            Random rand = new Random();
+            int randomNum = rand.nextInt(128);
+            if(randomNum<2){
+                LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.SUCC);
+                Main.greetings.get(event.getGuild().getLongID()).greet(event);
+            }else{
+                LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.INFO);
+            }
+        }
+    }
+    @EventSubscriber
+    public void userVoiceLeave(UserVoiceChannelLeaveEvent event){
         if(event.getVoiceChannel().getConnectedUsers().contains(event.getClient().getOurUser())
             && event.getVoiceChannel().getConnectedUsers().size()==1){
             event.getVoiceChannel().leave();
         }
     }
     @EventSubscriber
-    public void handleTrackFinished(TrackFinishEvent event){
-        LoggerService.log(event.getPlayer().getGuild(),"Scheduling leave",LoggerService.INFO);
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
-        Main.leaveVoice = executor.schedule(leave,30, TimeUnit.MINUTES);
-    }
-    @EventSubscriber
-    public void handleTrackStarted(TrackStartEvent event){
+    public void trackStarted(TrackStartEvent event){
         if(Main.leaveVoice != null){
             Main.leaveVoice.cancel(true);
             LoggerService.log(event.getPlayer().getGuild(),"Leave canceled",LoggerService.INFO);
         }
     }
     @EventSubscriber
-    public void handleMessageReceived(MessageReceivedEvent event) {
+    public void trackFinished(TrackFinishEvent event){
+        LoggerService.log(event.getPlayer().getGuild(),"Scheduling leave",LoggerService.INFO);
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
+        Main.leaveVoice = executor.schedule(leave,30, TimeUnit.MINUTES);
+    }
+    @EventSubscriber
+    public void messageReceived(MessageReceivedEvent event) {
         // When @everyone is tagged with a ? in the same message
         if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")){
             RequestBuffer.request(() -> event.getMessage().addReaction(":white_check_mark:")).get();
@@ -151,7 +167,7 @@ public class Events {
             LoggerService.log(event.getGuild(),"Valid command: "+cmd, LoggerService.INFO);
             commandMap.get(key[0]).get(cmd).runCommand(event,args);
         }else{
-            LoggerService.log(event.getGuild(),"Invalid command "+cmd, LoggerService.INFO);
+            LoggerService.log(event.getGuild(),"Invalid command: "+cmd, LoggerService.INFO);
         }
     }
 }

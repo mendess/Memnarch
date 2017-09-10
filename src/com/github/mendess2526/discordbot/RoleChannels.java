@@ -18,14 +18,12 @@ import java.util.stream.Collectors;
 @SuppressWarnings("WeakerAccess")
 public class RoleChannels {
 
-    static final int JOIN = 0;
-    static final int LEAVE = 1;
-
-    static final String PRIVATE_MARKER = ">";
-
-    static final String[] NUMBERS = {":one:",":two:",":three:",":four:",":five:",":six:"};
-
+    private static final int JOIN = 0;
+    private static final int LEAVE = 1;
+    private static final String[] NUMBERS = {":one:",":two:",":three:",":four:",":five:",":six:"};
+    private static final Set<Permissions> permissions = EnumSet.of(Permissions.MANAGE_CHANNELS);
     public static Map<String,Command> commandMap = new HashMap<>();
+    private static String PRIVATE_MARKER = ">";
 
     static {
         commandMap.put("NEW", RoleChannels::newChannel);
@@ -44,20 +42,17 @@ public class RoleChannels {
 
     // Managing Channels
     public static void handle(MessageReceivedEvent event, List<String> args){
-
-        if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)){
-            BotUtils.sendMessage(event.getChannel(),"You don't have permission to use that command",30,false);
-        }else{
-            try{
-                commandMap.get(args.get(0)).runCommand(event,args.subList(1,args.size()));
-            }catch (IndexOutOfBoundsException e){
-                HashMap<String,Set<String>> cmds = new HashMap<>();
-                cmds.put("Rolechannels",commandMap.keySet());
-                BotUtils.help(event.getAuthor(),event.getChannel(),cmds);
+        if(BotUtils.hasPermission(event,permissions)) {
+            if (args.size() == 0 || !commandMap.containsKey(args.get(0))) {
+                if (args.size() != 0) LoggerService.log(event.getGuild(), "Invalid Argument: " + args.get(0), LoggerService.INFO);
+                HashMap<String, Set<String>> cmds = new HashMap<>();
+                cmds.put("Rolechannels", commandMap.keySet());
+                BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
+            } else {
+                commandMap.get(args.get(0)).runCommand(event, args.subList(1, args.size()));
             }
         }
     }
-
     private static void newChannel(MessageReceivedEvent event, List<String> args) {
         EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
@@ -77,7 +72,7 @@ public class RoleChannels {
         }).get();
         if(ch==null){
             LoggerService.log(event.getGuild(),"Couldn't create channel",LoggerService.ERROR);
-            BotUtils.sendMessage(event.getChannel(),"Couldn't create channel, maybe I'm missing permissions?",30,false);
+            BotUtils.sendMessage(event.getChannel(),"Couldn't create channel, maybe I'm missing permissions?",120,false);
             return;
         }
 
@@ -97,7 +92,7 @@ public class RoleChannels {
         if(!success){
             LoggerService.log(event.getGuild(),"Couldn't change permissions for "+ch.getName()+".",LoggerService.ERROR);
             BotUtils.sendMessage(event.getChannel(),
-                    "Couldn't change permissions for channel"+ch.getName()+". Deleting channel",30,false);
+                    "Couldn't change permissions for channel"+ch.getName()+". Deleting channel",120,false);
             ch.delete();
             return;
         }
@@ -116,7 +111,7 @@ public class RoleChannels {
         if(!success){
             LoggerService.log(event.getGuild(),"Couldn't change topic for channel "+ch.getName()+". Deleting channel",LoggerService.ERROR);
             BotUtils.sendMessage(event.getChannel(),
-                    "Couldn't change topic for channel "+ch.getName()+". Deleting channel",30,false);
+                    "Couldn't change topic for channel "+ch.getName()+". Deleting channel",120,false);
             ch.delete();
         }
         LoggerService.log(event.getGuild(),"Changed topic of channel "+ch.getName(),LoggerService.INFO);
@@ -131,7 +126,7 @@ public class RoleChannels {
         try {
             id = Long.parseLong(args.get(0).replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
         }catch (NumberFormatException e){
-            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",30,false);
+            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",120,false);
             return;
         }
         ch = event.getGuild().getChannelByID(id);
@@ -147,10 +142,10 @@ public class RoleChannels {
             }
             BotUtils.sendMessage(event.getChannel(),
                     event.getGuild().getChannelByID(id)==null ? "Channel deleted successfully" : "Couldn't delete channel",
-                    30,false);
+                    120,false);
         }else {
             LoggerService.log(event.getGuild(),ch.getName()+" is not a Role Channel",LoggerService.INFO);
-            BotUtils.sendMessage(event.getChannel(),ch.getName()+" is not a Private Channel, I can't delete it",30,false);
+            BotUtils.sendMessage(event.getChannel(),ch.getName()+" is not a Private Channel, I can't delete it",120,false);
         }
     }
 
@@ -161,7 +156,7 @@ public class RoleChannels {
         chList.forEach(c -> {
             RequestBuffer.request(() -> c.changeTopic(PRIVATE_MARKER+c.getTopic())).get();
             RequestBuffer.request(() -> c.overrideUserPermissions(event.getGuild().getClient().getOurUser(),readMessages,noPermits)).get();
-            BotUtils.sendMessage(event.getChannel(),"Changed topic of "+c.getName(),30,false);
+            BotUtils.sendMessage(event.getChannel(),"Changed topic of "+c.getName(),120,false);
         });
     }
 
@@ -170,14 +165,14 @@ public class RoleChannels {
         try {
             id = Long.parseLong(name.get(0).replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
         }catch (NumberFormatException e){
-            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",30,false);
+            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",120,false);
             return;
         }
         IChannel ch = event.getGuild().getChannelByID(id);
         LoggerService.log(event.getGuild(),"Channel to set: "+ch.getName(),LoggerService.INFO);
 
         if(ch.getTopic()!=null && ch.getTopic().startsWith(PRIVATE_MARKER)){
-            BotUtils.sendMessage(event.getChannel(),"Already a private channel",30,false);
+            BotUtils.sendMessage(event.getChannel(),"Already a private channel",120,false);
             return;
         }
         String newTopic = PRIVATE_MARKER + (ch.getTopic()!=null ? ch.getTopic() : "");
@@ -197,14 +192,14 @@ public class RoleChannels {
         try {
             id = Long.parseLong(name.get(0).replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
         }catch (NumberFormatException e){
-            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",30,false);
+            BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",120,false);
             return;
         }
         IChannel ch = event.getGuild().getChannelByID(id);
         LoggerService.log(event.getGuild(),"Channel to un-set: "+ch.getName(),LoggerService.INFO);
 
         if(ch.getTopic()==null || !ch.getTopic().startsWith(PRIVATE_MARKER)){
-            BotUtils.sendMessage(event.getChannel(),"Not a private channel",30,false);
+            BotUtils.sendMessage(event.getChannel(),"Not a private channel",120,false);
             return;
         }
         String newTopic = ch.getTopic().replaceFirst(PRIVATE_MARKER,"");
@@ -239,7 +234,7 @@ public class RoleChannels {
                         e.printStackTrace();
                     }
                     if(!c.getTopic().startsWith(PRIVATE_MARKER)){
-                        BotUtils.sendMessage(event.getChannel(),"Couldn't convert "+c.getName()+". Try to rerun the command",30,false);
+                        BotUtils.sendMessage(event.getChannel(),"Couldn't convert "+c.getName()+". Try to rerun the command",120,false);
                     }
                 });
     }
@@ -329,10 +324,10 @@ public class RoleChannels {
                     }
                     if(ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)){
                         RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                new EmbedBuilder().withTitle(":white_check_mark: Channel joined!").build()));
+                                new EmbedBuilder().withTitle(":white_check_mark: Channel joined!").build())).get();
                     }else{
                         RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                new EmbedBuilder().withTitle(":x: Couldn't join channel").build()));
+                                new EmbedBuilder().withTitle(":x: Couldn't join channel").build())).get();
                     }
                     LoggerService.log(event.getGuild(),"Channel list after adding user: "+ Arrays.toString(joinableChannels(event.getGuild(),event.getUser()).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
                     showJoinableChannels(event.getMessage(), event.getUser(), page);
@@ -424,10 +419,10 @@ public class RoleChannels {
                     }
                     if(!ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES)){
                         RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                new EmbedBuilder().withTitle(":white_check_mark: Channel Left!").build()));
+                                new EmbedBuilder().withTitle(":white_check_mark: Channel Left!").build())).get();
                     }else{
                         RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                new EmbedBuilder().withTitle(":x: Couldn't leave channel").build()));
+                                new EmbedBuilder().withTitle(":x: Couldn't leave channel").build())).get();
                     }
                     LoggerService.log(event.getGuild(),"Channel list after removing user: "+ Arrays.toString(joinableChannels(event.getGuild(),event.getUser()).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
                     showLeavableChannels(event.getMessage(), event.getUser(), page);
@@ -452,7 +447,7 @@ public class RoleChannels {
             // Make a sub list of channels, i.e. a page.
             LoggerService.log(chList.get(0).getGuild(),"List size: "+chList.size(),LoggerService.INFO);
             LoggerService.log(chList.get(0).getGuild(),"Channel list: "+ Arrays.toString(chList.stream().map(IChannel::getName).toArray()),LoggerService.INFO);
-            if(currentPage*6 > chList.size()){currentPage--;}
+            if(currentPage*6 >= chList.size()){currentPage--;}
             int from = currentPage*6;
             int to = from+6 > chList.size() ? chList.size() : from+6;
             LoggerService.log(chList.get(0).getGuild(),"Making sub list. From: "+from+" To: "+to,LoggerService.INFO);
@@ -478,8 +473,7 @@ public class RoleChannels {
         }
         LoggerService.log(msg.getGuild(),"page: "+page+" size: "+size+" (size-1)/6: "+(size-1)/6,LoggerService.INFO);
         boolean isLastPage = page>=(size-1)/6;
-        int count = isLastPage ? ((size-1)%6)+1 : 6;
-        if(count==0){count=6;}
+        int count = size==0 ? 0 : (isLastPage ? ((size-1)%6)+1 : 6);
         for(int i=0;i<count;i++){
             int finalI = i;
             RequestBuffer.request(() -> msg.addReaction(NUMBERS[finalI])).get();

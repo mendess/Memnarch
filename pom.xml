@@ -6,7 +6,7 @@
 
     <groupId>com.github.mendess2526.discordbot</groupId>
     <artifactId>discordbot</artifactId>
-    <version>2.5.4</version>
+    <version>3.0.0</version>
 
     <repositories>
 

@@ -9,6 +9,7 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.Reactio
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RequestBuffer;
 
@@ -23,14 +24,16 @@ public class BotUtils {
     private static String ERROR_SMTH_WRONG = "Something went wrong, contact the owner of the bot";
 
     public static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
-
-        try {
-            TimeUnit.SECONDS.sleep(delay);
-            client.getDispatcher().waitFor(MessageReceivedEvent.class,30,TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            LoggerService.log(msg.getGuild(),"Interrupted while waiting for a Message received event on sfxadd",LoggerService.ERROR);
-        }
-        msg.delete();
+        Thread t = new Thread(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(delay);
+                client.getDispatcher().waitFor(MessageReceivedEvent.class,120,TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                LoggerService.log(msg.getGuild(),"Interrupted while waiting for a Message received event on sfxadd",LoggerService.ERROR);
+            }
+            msg.delete();
+        });
+        t.start();
     }
     public static void contactOwner(Event event, String msg){
         if(event instanceof MessageReceivedEvent){
@@ -58,7 +61,6 @@ public class BotUtils {
         if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
         return msg;
     }
-
     public static IMessage sendMessage(IChannel channel, String message, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
         IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(message,eb);}).get();
         if(reactCross){closeButton(msg);}
@@ -96,9 +98,17 @@ public class BotUtils {
         commands.keySet().forEach(k -> {
             StringBuilder s = new StringBuilder();
             commands.get(k).forEach(nestedK -> s.append(nestedK.toLowerCase()).append("\n"));
-            eb.appendField(WordUtils.capitalizeFully(k),s.toString(), true);
+            eb.appendField(WordUtils.capitalizeFully(k),s.toString(), false);
         });
         eb.withFooterText("Prefix: "+Events.BOT_PREFIX);
         sendMessage(channel,user.mention(),eb.build(),-1,true);
+    }
+    public static boolean hasPermission(MessageReceivedEvent event, Set<Permissions> permissions){
+        if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).containsAll(permissions)){
+            sendMessage(event.getChannel(), "You don't have permission to use that command", 120, false);
+            return false;
+        }else {
+            return true;
+        }
     }
 }

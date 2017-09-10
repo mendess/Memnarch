@@ -12,22 +12,23 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("WeakerAccess")
-public class MiscCommands {
+public class MiscCommands{
 
     public static void help(MessageReceivedEvent event, List<String> args) {
         HashMap<String,Set<String>> cmds = new HashMap<>();
         Events.commandMap.keySet().forEach(k -> cmds.put(k,Events.commandMap.get(k).keySet()));
         BotUtils.help(event.getAuthor(),event.getChannel(),cmds);
     }
+
     public static void ping(MessageReceivedEvent event, List<String> args){
         LocalDateTime askTime = event.getMessage().getTimestamp();
         LocalDateTime respondTime = LocalDateTime.now();
-        BotUtils.sendMessage(event.getChannel(),new EmbedBuilder().withTitle("Pong! "+(askTime.until(respondTime, ChronoUnit.MILLIS))+" ms").build(),30,true);
+        BotUtils.sendMessage(event.getChannel(),new EmbedBuilder().withTitle("Pong! "+(askTime.until(respondTime, ChronoUnit.MILLIS))+" ms").build(),120,true);
     }
-
     public static void hi(MessageReceivedEvent event, List<String> args) {
         BotUtils.sendMessage(event.getChannel(),"Hello, minion!",-1,false);
     }
+
     public static void restart(MessageReceivedEvent event, List<String> strings) {
         BotUtils.sendMessage(event.getChannel(),"Restarting...",-1,false);
         IDiscordClient client = event.getClient();
