@@ -1,5 +1,6 @@
 package com.github.mendess2526.discordbot;
 
+import org.apache.commons.lang3.text.WordUtils;
 import org.ini4j.Wini;
 import sx.blah.discord.handle.impl.events.guild.GuildEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -242,7 +243,7 @@ public class Greetings {
 
     private void list(IChannel channel) {
         StringBuilder s = new StringBuilder();
-        greetings.forEach(g -> s.append(g).append("\n"));
+        greetings.forEach(g -> s.append(WordUtils.capitalizeFully(g)).append("\n"));
         BotUtils.sendMessage(channel,new EmbedBuilder().withTitle("List of greetings").withDesc(s.toString()).build(),-1,true);
     }
 }
