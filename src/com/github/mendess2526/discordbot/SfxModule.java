@@ -123,12 +123,13 @@ public class SfxModule {
         }
         IMessage.Attachment attach = attachments.get(0);
         String[] name = attach.getFilename().split(Pattern.quote("."));
+        String filename = attach.getFilename().replaceAll(Pattern.quote("_")," ");
 
         if(!name[name.length-1].equals("mp3")){
             BotUtils.sendMessage(event.getChannel(),"You can only add `.mp3` files",120,false);
         }else if(attach.getFilesize()>204800) {
             BotUtils.sendMessage(event.getChannel(), "File too big, please keep it under 200kb", 120, false);
-        }else if(songsDir(event,file -> file.getName().toUpperCase().contains(name[0]))!=null){
+        }else if(songsDir(event,file -> file.getName().toUpperCase().contains(filename))!=null){
             BotUtils.sendMessage(event.getChannel(),"File with that name already exists",120,false);
         }else {
             if(!new File("sfx").exists()) {
@@ -136,7 +137,6 @@ public class SfxModule {
                     return;
                 }
             }
-            String filename = attach.getFilename().replaceAll(Pattern.quote("_")," ");
             LoggerService.log(event.getGuild(),"Filepath: sfx/"+filename,LoggerService.INFO);
             URL url;
             ReadableByteChannel rbc;

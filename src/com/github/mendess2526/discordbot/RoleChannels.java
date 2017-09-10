@@ -53,6 +53,7 @@ public class RoleChannels {
             }
         }
     }
+
     private static void newChannel(MessageReceivedEvent event, List<String> args) {
         EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);

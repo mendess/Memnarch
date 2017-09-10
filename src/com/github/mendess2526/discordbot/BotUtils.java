@@ -104,7 +104,7 @@ public class BotUtils {
         sendMessage(channel,user.mention(),eb.build(),-1,true);
     }
     public static boolean hasPermission(MessageReceivedEvent event, Set<Permissions> permissions){
-        if(!event.getClient().getApplicationOwner().equals(event.getAuthor())
+        if(!event.getAuthor().equals(event.getClient().getApplicationOwner())
             && !event.getAuthor().getPermissionsForGuild(event.getGuild()).containsAll(permissions)){
             sendMessage(event.getChannel(), "You don't have permission to use that command", 120, false);
             return false;
