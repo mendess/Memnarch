@@ -182,6 +182,10 @@ public class Greetings {
         return iniFile.get(longID.toString()).get("enabled",boolean.class);
     }
     public void addGreeting(MessageReceivedEvent event, String searchStr){
+        if(searchStr.length()==0){
+            BotUtils.sendMessage(event.getChannel(),"I need to know what you want to add. Use `|sfx <list` to know what sounds you can add",120,false);
+            return;
+        }
         File[] songDir = SfxModule.songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
         LoggerService.log(event.getGuild(),"Songs that match: "+ Arrays.toString(songDir),LoggerService.INFO);
         if (songDir == null || songDir.length == 0) {
@@ -203,6 +207,10 @@ public class Greetings {
     }
 
     private void removeGreeting(MessageReceivedEvent event, String searchStr) {
+        if(searchStr.length()==0){
+            BotUtils.sendMessage(event.getChannel(),"I need to know what you want to remove. Use `|greet list` to know what sounds you can remove",120,false);
+            return;
+        }
         List<String> gList = this.greetings.stream().map(String::toUpperCase).filter(s -> s.contains(searchStr)).collect(Collectors.toList());
         if(gList.size()==0){
             BotUtils.sendMessage(event.getChannel(),"No Greeting with that name",120,false);
@@ -233,6 +241,8 @@ public class Greetings {
     }
 
     private void list(IChannel channel) {
-        BotUtils.sendMessage(channel,new EmbedBuilder().withTitle("List of greetings").withDesc(greetings.toString()).build(),-1,true);
+        StringBuilder s = new StringBuilder();
+        greetings.forEach(g -> s.append(g).append("\n"));
+        BotUtils.sendMessage(channel,new EmbedBuilder().withTitle("List of greetings").withDesc(s.toString()).build(),-1,true);
     }
 }
