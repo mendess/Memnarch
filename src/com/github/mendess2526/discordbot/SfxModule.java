@@ -129,7 +129,7 @@ public class SfxModule {
             BotUtils.sendMessage(event.getChannel(),"You can only add `.mp3` files",120,false);
         }else if(attach.getFilesize()>204800) {
             BotUtils.sendMessage(event.getChannel(), "File too big, please keep it under 200kb", 120, false);
-        }else if(songsDir(event,file -> file.getName().toUpperCase().contains(filename))!=null){
+        }else if(new File("sfx/"+filename).exists()){
             BotUtils.sendMessage(event.getChannel(),"File with that name already exists",120,false);
         }else {
             if(!new File("sfx").exists()) {

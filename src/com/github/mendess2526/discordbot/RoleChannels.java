@@ -63,6 +63,11 @@ public class RoleChannels {
         IUser ourUser = guild.getClient().getOurUser();
         String name = String.join("-",args);
 
+        if(name.length()<3){
+            LoggerService.log(event.getGuild(),"Couldn't create channel",LoggerService.ERROR);
+            BotUtils.sendMessage(event.getChannel(),"Couldn't create channel, channel name must have more then 2 characters",120,false);
+            return;
+        }
         // Attempt to create channel
         ch = RequestBuffer.request(() -> {
             try{
@@ -281,13 +286,14 @@ public class RoleChannels {
         }
         RequestBuffer.request(() -> ch.overrideUserPermissions(user,EnumSet.of(Permissions.READ_MESSAGES),EnumSet.noneOf(Permissions.class)));
     }
-
+    // TODO fix joining top option going backwards instead
     public static void join(ReactionEvent event) {
         // If it was the mentioned user that reacted to a reaction added by the bot
         if(event.getMessage().getMentions().get(0).equals(event.getUser())
                 && event.getReaction().getUserReacted(event.getClient().getOurUser())){
 
             String opt = event.getReaction().getUnicodeEmoji().getAliases().get(0);
+            LoggerService.log(event.getGuild(),"Option selected: "+opt,LoggerService.INFO);
             switch (opt) {
                 case "arrow_backward": {
                     String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
@@ -472,7 +478,7 @@ public class RoleChannels {
         if(page!=0){
             RequestBuffer.request(() -> msg.addReaction(":arrow_backward:")).get();
         }
-        LoggerService.log(msg.getGuild(),"page: "+page+" size: "+size+" (size-1)/6: "+(size-1)/6,LoggerService.INFO);
+        LoggerService.log(msg.getGuild(),"page: "+page+" size: "+size+" ((size-1)%6)+1: "+((size-1)%6)+1,LoggerService.INFO);
         boolean isLastPage = page>=(size-1)/6;
         int count = size==0 ? 0 : (isLastPage ? ((size-1)%6)+1 : 6);
         for(int i=0;i<count;i++){
