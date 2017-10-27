@@ -34,7 +34,7 @@ public class Events {
         miscMap.put("HELP", MiscCommands::help);
         miscMap.put("PING", MiscCommands::ping);
         miscMap.put("HI", MiscCommands::hi);
-        miscMap.put("RESTART",MiscCommands::restart);
+        //miscMap.put("RESTART",MiscCommands::restart);
         miscMap.put("WHOAREYOU",MiscCommands::whoareyou);
 
         rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
@@ -42,7 +42,7 @@ public class Events {
         rolechannelsMap.put("LEAVE", RoleChannels::showLeavableChannels);
 
         sfxMap.put("SFX", SfxModule::sfx);
-        sfxMap.put("SFXLIST", SfxModule::sfxlist);
+        sfxMap.put("SFXLIST", SfxModule::sfxList);
 
         greetingsMap.put("GREET",Greetings::greetings);
 
@@ -128,7 +128,7 @@ public class Events {
         LoggerService.log(event.getPlayer().getGuild(),"Scheduling leave",LoggerService.INFO);
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
-        Main.leaveVoice = executor.schedule(leave,30, TimeUnit.MINUTES);
+        Main.leaveVoice = executor.schedule(leave,1, TimeUnit.MINUTES);
     }
     @EventSubscriber
     public void messageReceived(MessageReceivedEvent event) {

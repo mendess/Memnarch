@@ -26,16 +26,17 @@ public class RoleChannels {
     private static String PRIVATE_MARKER = ">";
 
     static {
+        // Creates a new text channel of the given name
         commandMap.put("NEW", RoleChannels::newChannel);
-
+        // Deletes the text channel of the given name
         commandMap.put("DELETE", RoleChannels::deleteChannel);
-
+        // Sets all text channels as private
         commandMap.put("SETALL", RoleChannels::setAll);
-
+        // Sets the given channel as private
         commandMap.put("SET", RoleChannels::set);
-
+        // Sets the given channel as public
         commandMap.put("UNSET", RoleChannels::unSet);
-
+        // Converts the private channel markers for all private channels
         commandMap.put("CONVERT", RoleChannels::convert);
     }
 
@@ -127,6 +128,7 @@ public class RoleChannels {
     }
 
     private static void deleteChannel(MessageReceivedEvent event, List<String> args) {
+        if(noArgs(event.getChannel(),args))return;
         IChannel ch;
         long id;
         try {
@@ -167,6 +169,7 @@ public class RoleChannels {
     }
 
     private static void set(MessageReceivedEvent event, List<String> name){
+        if(noArgs(event.getChannel(),name))return;
         long id;
         try {
             id = Long.parseLong(name.get(0).replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
@@ -194,6 +197,7 @@ public class RoleChannels {
     }
 
     private static void unSet(MessageReceivedEvent event, List<String> name){
+        if(noArgs(event.getChannel(),name))return;
         long id;
         try {
             id = Long.parseLong(name.get(0).replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
@@ -223,6 +227,10 @@ public class RoleChannels {
     }
 
     private static void convert(MessageReceivedEvent event, List<String> args){
+        if(args.size()==0){
+            BotUtils.sendMessage(event.getChannel(),"Please provide the old private channel marker",30,false);
+            return;
+        }
         args.remove(0);
         String oldMarker = String.join(" ", args);
         LoggerService.log(event.getGuild(),"Converting "+oldMarker+" to "+PRIVATE_MARKER,LoggerService.INFO);
@@ -489,6 +497,14 @@ public class RoleChannels {
             RequestBuffer.request(() -> msg.addReaction(":arrow_forward:")).get();
         }
         BotUtils.closeButton(msg);
+    }
+
+    private static boolean noArgs(IChannel ch, List<String> args){
+        if(args.size()==0){
+            BotUtils.sendMessage(ch,"Please provide a channel ID",30,false);
+            return false;
+        }
+        return true;
     }
 
     private static int literal2Int(String literal){

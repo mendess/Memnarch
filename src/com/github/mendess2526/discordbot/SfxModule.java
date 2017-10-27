@@ -2,9 +2,7 @@ package com.github.mendess2526.discordbot;
 
 import org.apache.commons.lang3.text.WordUtils;
 import sx.blah.discord.api.events.Event;
-import sx.blah.discord.handle.impl.events.guild.GuildEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.handle.obj.Permissions;
@@ -13,13 +11,7 @@ import sx.blah.discord.util.audio.AudioPlayer;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
@@ -28,7 +20,7 @@ public class SfxModule {
 
     static {
 
-        commandMap.put("<LIST", SfxModule::sfxlist);
+        commandMap.put("<LIST", SfxModule::sfxList);
 
         commandMap.put("<ADD", SfxModule::sfxAdd);
 
@@ -82,7 +74,7 @@ public class SfxModule {
             e.printStackTrace();
         }
     }
-    public static void sfxlist(MessageReceivedEvent event, List<String> args) {
+    public static void sfxList(MessageReceivedEvent event, List<String> args) {
         File[] songDir = songsDir(event,File::isFile);
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of sfx files:");
@@ -122,51 +114,7 @@ public class SfxModule {
             return;
         }
         IMessage.Attachment attach = attachments.get(0);
-        String[] name = attach.getFilename().split(Pattern.quote("."));
-        String filename = attach.getFilename().replaceAll(Pattern.quote("_")," ");
-
-        if(!name[name.length-1].equals("mp3")){
-            BotUtils.sendMessage(event.getChannel(),"You can only add `.mp3` files",120,false);
-        }else if(attach.getFilesize()>204800) {
-            BotUtils.sendMessage(event.getChannel(), "File too big, please keep it under 200kb", 120, false);
-        }else if(new File("sfx/"+filename).exists()){
-            BotUtils.sendMessage(event.getChannel(),"File with that name already exists",120,false);
-        }else {
-            if(!new File("sfx").exists()) {
-                if (!mkSfxFolder(event)) {
-                    return;
-                }
-            }
-            LoggerService.log(event.getGuild(),"Filepath: sfx/"+filename,LoggerService.INFO);
-            URL url;
-            ReadableByteChannel rbc;
-            FileOutputStream fos;
-            try {
-                url = new URL(attach.getUrl());
-                HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
-                httpcon.addRequestProperty("User-Agent", "Mozilla/4.0");
-                rbc = Channels.newChannel(httpcon.getInputStream());
-                fos = new FileOutputStream("sfx/"+filename);
-                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-            } catch (MalformedURLException e) {
-                LoggerService.log(event.getGuild(),"Malformed Url: \""+attach.getUrl()+"\" File: "+filename,LoggerService.ERROR);
-                e.printStackTrace();
-                return;
-            } catch (FileNotFoundException e) {
-                LoggerService.log(event.getGuild(),"File not found: "+filename,LoggerService.ERROR);
-                e.printStackTrace();
-                return;
-            } catch (IOException e) {
-                LoggerService.log(event.getGuild(),"IOException for file: "+filename,LoggerService.ERROR);
-                e.printStackTrace();
-                return;
-            }
-            if(new File("sfx/"+filename).exists()){
-                BotUtils.sendMessage(event.getChannel(),"File added successfully!",-1,false);
-            }else{
-                BotUtils.sendMessage(event.getChannel(),"File couldn't be added",120,false);
-            }
-        }
+        BotUtils.downloadFile(event,attach,"sfx");
     }
     public static void sfxDelete(MessageReceivedEvent event, List<String> args) {
         if(!event.getAuthor().equals(event.getClient().getApplicationOwner())){
@@ -215,20 +163,8 @@ public class SfxModule {
         if(sfx.exists()){
             songDir = new File("sfx").listFiles(filter);
         }else{
-            mkSfxFolder(event);
+            BotUtils.mkFolder(event,"sfx");
         }
         return songDir;
-    }
-    public static boolean mkSfxFolder(Event event){
-        boolean success = !new File("sfx").mkdirs();
-        if (!success) {
-            IGuild guild = null;
-            if(event instanceof GuildEvent){
-                guild = ((GuildEvent) event).getGuild();
-            }
-            BotUtils.contactOwner(event,"Couldn't create sfx folder");
-            LoggerService.log(guild,"Couldn't create sfx folder",LoggerService.ERROR);
-        }
-        return success;
     }
 }
