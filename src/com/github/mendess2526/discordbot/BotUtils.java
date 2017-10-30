@@ -7,6 +7,7 @@ import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.GuildEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RequestBuffer;
@@ -28,6 +29,7 @@ import java.util.regex.Pattern;
 @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 public class BotUtils {
     private static String ERROR_SMTH_WRONG = "Something went wrong, contact the owner of the bot";
+    public static final String X = "\u2716";//"\u274C";
 
     public static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
         Thread t = new Thread(() -> {
@@ -86,7 +88,7 @@ public class BotUtils {
     }
 
     public static void closeButton(IMessage msg){
-        RequestBuffer.request(() -> msg.addReaction(":heavy_multiplication_x:")).get();
+        RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(X))).get();
     }
     public static void waitForReaction(IMessage msg, String reaction){
         if(msg.getReactionByUnicode(reaction)==null){

@@ -3,10 +3,11 @@ package com.github.mendess2526.discordbot;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelLeaveEvent;
+import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.RequestBuffer;
 import sx.blah.discord.util.audio.events.TrackFinishEvent;
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
 @SuppressWarnings("WeakerAccess")
 public class Events {
     public final static String BOT_PREFIX = "|";
+    public static final String CHECK_MARK = "\u2705";
+    public static final String RED_X = "\u274C";
 
     public static Map<String, Command> miscMap = new HashMap<>();
     public static Map<String, Command> sfxMap = new HashMap<>();
@@ -38,8 +41,8 @@ public class Events {
         miscMap.put("WHOAREYOU",MiscCommands::whoareyou);
 
         rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
-        rolechannelsMap.put("JOIN", RoleChannels::showJoinableChannels);
-        rolechannelsMap.put("LEAVE", RoleChannels::showLeavableChannels);
+        rolechannelsMap.put("JOIN", RoleChannels::startJoinUI);
+        rolechannelsMap.put("LEAVE", RoleChannels::startLeaveUI);
 
         sfxMap.put("SFX", SfxModule::sfx);
         sfxMap.put("SFXLIST", SfxModule::sfxList);
@@ -61,22 +64,24 @@ public class Events {
         Main.initialiseServerSettings(event.getGuild());
     }
     @EventSubscriber
-    public void reactionEvent(ReactionEvent event) {
+    public void reactionEvent(ReactionAddEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
         if(event.getReaction().getUserReacted(event.getClient().getOurUser()) &&
                 !(event.getUser().equals(event.getClient().getOurUser()))){
 
             List<IUser> mentions = event.getMessage().getMentions();
             if(mentions.isEmpty() || mentions.contains(event.getUser())){
-                if(event.getReaction().getUnicodeEmoji().getAliases().get(0).equals("heavy_multiplication_x")){
+                if(event.getReaction().getEmoji().getName().equals(BotUtils.X)){
                     LoggerService.log(event.getGuild(),event.getUser().getName()+" clicked an :heavy_multiplication_x:",LoggerService.INFO);
                     event.getMessage().delete();
                 }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
                     //BotUtils.waitForReaction(event.getMessage(),"heavy_multiplication_x");
                     RoleChannels.join(event);
+                    RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
                 }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to leave!")) {
                     //BotUtils.waitForReaction(event.getMessage(),"heavy_multiplication_x");
                     RoleChannels.leave(event);
+                    RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
                 }
             }
         }
@@ -134,8 +139,8 @@ public class Events {
     public void messageReceived(MessageReceivedEvent event) {
         // When @everyone is tagged with a ? in the same message
         if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")){
-            RequestBuffer.request(() -> event.getMessage().addReaction(":white_check_mark:")).get();
-            RequestBuffer.request(() -> event.getMessage().addReaction(":x:")).get();
+            RequestBuffer.request(() -> event.getMessage().addReaction(ReactionEmoji.of(CHECK_MARK))).get();
+            RequestBuffer.request(() -> event.getMessage().addReaction(ReactionEmoji.of(RED_X))).get();
             return;
         }
 
