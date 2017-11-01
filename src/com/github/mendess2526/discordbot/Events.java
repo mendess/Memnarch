@@ -38,7 +38,7 @@ public class Events {
         miscMap.put("PING", MiscCommands::ping);
         miscMap.put("HI", MiscCommands::hi);
         //miscMap.put("RESTART",MiscCommands::restart);
-        miscMap.put("WHOAREYOU",MiscCommands::whoareyou);
+        miscMap.put("WHOAREYOU",MiscCommands::whoAreYou);
 
         rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
         rolechannelsMap.put("JOIN", RoleChannels::startJoinUI);
@@ -63,6 +63,7 @@ public class Events {
         Main.initialiseGreetings(event.getGuild());
         Main.initialiseServerSettings(event.getGuild());
     }
+    //TODO Make this esle if a case and define the literals at top level in RoleChannels
     @EventSubscriber
     public void reactionEvent(ReactionAddEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
@@ -74,18 +75,38 @@ public class Events {
                 if(event.getReaction().getEmoji().getName().equals(BotUtils.X)){
                     LoggerService.log(event.getGuild(),event.getUser().getName()+" clicked an :heavy_multiplication_x:",LoggerService.INFO);
                     event.getMessage().delete();
-                }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to join!")){
-                    //BotUtils.waitForReaction(event.getMessage(),"heavy_multiplication_x");
-                    RoleChannels.join(event);
-                    RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
-                }else if(event.getMessage().getEmbeds().get(0).getTitle().equals("Select the channel you want to leave!")) {
-                    //BotUtils.waitForReaction(event.getMessage(),"heavy_multiplication_x");
-                    RoleChannels.leave(event);
-                    RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
+                }else{
+                    int size = 0;
+                    switch (event.getMessage().getEmbeds().get(0).getTitle()){
+                        case RoleChannels.TITLE_INIT_QUERY_J:
+                            RoleChannels.processInitialQuery(event,event.getUser(),true);
+                            break;
+                        case RoleChannels.TITLE_INIT_QUERY_L:
+                            RoleChannels.processInitialQuery(event,event.getUser(),false);
+                            break;
+                        case RoleChannels.TITLE_CH_QUERY_J:
+                            size = RoleChannels.processChannelQuery(event,true);
+                            RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
+                            break;
+                        case RoleChannels.TITLE_CH_QUERY_L:
+                            size = RoleChannels.processChannelQuery(event,false);
+                            RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
+                            break;
+                        case RoleChannels.TITLE_CT_QUERY_J:
+                            size = RoleChannels.processCategoryQuery(event,true);
+                            RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
+                            break;
+                        case RoleChannels.TITLE_CT_QUERY_L:
+                            size = RoleChannels.processCategoryQuery(event,false);
+                            RequestBuffer.request(() ->event.getMessage().removeReaction(event.getUser(),event.getReaction()));
+                            break;
+                    }
+                    if(size>0 && size<7){RoleChannels.cutSuperfluousReactions(event.getMessage(),size);}
                 }
             }
         }
     }
+
     @EventSubscriber
     public void userGuildJoin(UserJoinEvent event){
         if(Main.serverSettings.get(event.getGuild().getLongID()).messagesNewUsers()){
@@ -130,7 +151,7 @@ public class Events {
     }
     @EventSubscriber
     public void trackFinished(TrackFinishEvent event){
-        LoggerService.log(event.getPlayer().getGuild(),"Scheduling leave",LoggerService.INFO);
+        LoggerService.log(event.getPlayer().getGuild(),"Scheduling leaveChannel",LoggerService.INFO);
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
         Main.leaveVoice = executor.schedule(leave,1, TimeUnit.MINUTES);

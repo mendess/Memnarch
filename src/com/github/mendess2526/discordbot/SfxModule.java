@@ -47,7 +47,7 @@ public class SfxModule {
     public static void sfxPlay(MessageReceivedEvent event, List<String> args) {
         IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
         if (vChannel == null) {
-            BotUtils.sendMessage(event.getChannel(), "Please join a voice channel before using this command!", 120, false);
+            BotUtils.sendMessage(event.getChannel(), "Please joinChannel a voice channel before using this command!", 120, false);
             return;
         }
         String searchStr = String.join(" ", args);

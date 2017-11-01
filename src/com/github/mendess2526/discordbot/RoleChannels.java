@@ -5,6 +5,7 @@ import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelUpdateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
@@ -14,6 +15,7 @@ import sx.blah.discord.util.RequestBuffer;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
@@ -26,6 +28,17 @@ public class RoleChannels {
     private static final String ARROW_FORW = "\u27A1";
     private static final String ONE = "1⃣", TWO = "2⃣", THREE = "3⃣", FOUR = "4⃣", FIVE = "5⃣", SIX = "6⃣";
     private static final String[] NUMBERS = {ONE,TWO,THREE,FOUR,FIVE,SIX};
+
+    public static final String TITLE_INIT_QUERY_J = "Do you want to join a category or individual channels?";
+    public static final String TITLE_INIT_QUERY_L = "Do you want to leave a category or individual channels?";
+    public static final String TITLE_CH_QUERY_J = "Select the channel you want to join!";
+    public static final String TITLE_CH_QUERY_L = "Select the channel you want to leave!";
+    public static final String TITLE_CT_QUERY_J = "Select the category you want to join!";
+    public static final String TITLE_CT_QUERY_L = "Select the category you want to leave!";
+    private static final String[] TITLE_EMPTY_CHLIST = {"No more channels to join. You're EVERYWHERE!", "No more channels to leave."};
+    private static final String[] TITLE_INIT_QUERY = {TITLE_INIT_QUERY_J,TITLE_INIT_QUERY_L};
+    private static final String[] TITLE_CH_QUERY = {TITLE_CH_QUERY_J,TITLE_CH_QUERY_L};
+    private static final String[] TITLE_CT_QUERY = {TITLE_CT_QUERY_J,TITLE_CT_QUERY_L};
 
     private static final Set<Permissions> permissions = EnumSet.of(Permissions.MANAGE_CHANNELS);
 
@@ -47,7 +60,7 @@ public class RoleChannels {
         commandMap.put("CONVERT", RoleChannels::convert);
     }
 
-
+    
     // Managing Channels
     public static void handle(MessageReceivedEvent event, List<String> args){
         if(BotUtils.hasPermission(event,permissions)) {
@@ -262,10 +275,14 @@ public class RoleChannels {
 
     // Join
     public static void startJoinUI(MessageReceivedEvent event, List<String> args) {
-        createChannelList(event,true);
+        if(hasChannelsInCategories(event.getGuild(), event.getAuthor(), true)){
+            createInitialQuery(event,true);
+        }else{
+            createChannelList(event,true);
+        }
     }
 
-    private static boolean addUser(ReactionEvent event, IChannel ch, IUser user) {
+    private static boolean addUser2Channel(ReactionEvent event, IChannel ch, IUser user) {
         RequestBuffer.request(() -> ch.overrideUserPermissions(user,EnumSet.of(Permissions.READ_MESSAGES),EnumSet.noneOf(Permissions.class)));
         try {
             event.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) ->
@@ -277,70 +294,21 @@ public class RoleChannels {
         }
         return ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES);
     }
-    
-    public static void join(ReactionEvent event) {
-        // If it was the mentioned user that reacted to a reaction added by the bot
-        if(event.getMessage().getMentions().get(0).equals(event.getUser())){
 
-            String opt = event.getReaction().getEmoji().getName();
-            LoggerService.log(event.getGuild(),"Selected option: "+ EmojiParser.parseToAliases(opt),LoggerService.INFO);
-            switch (opt) {
-                case ARROW_BACK: {
-                    String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
-                    int page = Integer.parseInt(pageStr) - 1;
-                    editChannelList(event.getMessage(), event.getUser(), page - 1,true);
-                    break;
-                }
-                case ARROW_FORW: {
-                    String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
-                    int page = Integer.parseInt(pageStr) - 1;
-                    editChannelList(event.getMessage(), event.getUser(), page + 1,true);
-                    break;
-                }
-                case ONE:
-                case TWO:
-                case THREE:
-                case FOUR:
-                case FIVE:
-                case SIX: {
-                    String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
-                    int page = Integer.parseInt(pageStr) - 1;
-                    int chNumber = literal2Int(opt);
-
-                    IChannel ch;
-                    try{
-                        ch = getChannels(event.getGuild(), event.getUser(),true).get((chNumber - 1) + page * 6);
-                    }catch (IndexOutOfBoundsException e){
-                        LoggerService.log(event.getGuild(),"Invalid channel number picked",LoggerService.INFO);
-                        return;
-                    }
-                    LoggerService.log(event.getGuild(),"Channel list before adding user: "+ Arrays.toString(getChannels(event.getGuild(),event.getUser(),false).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
-                    boolean added = addUser(event, ch, event.getUser());
-                    if(!added){
-                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                new EmbedBuilder().withTitle(":x: Couldn't join channel").build())).get();
-                        BotUtils.contactOwner(event,"Couldn't remove "+event.getUser().getName()+" from "+ch.getName());
-                        try {
-                            TimeUnit.SECONDS.sleep(3);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    LoggerService.log(event.getGuild(),"Channel list after adding user: "+ Arrays.toString(getChannels(event.getGuild(),event.getUser(),true).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
-
-                    editChannelList(event.getMessage(), event.getUser(), page,true);
-                    break;
-                }
-            }
-        }
+    private static void addUser2Category(ReactionAddEvent event, ICategory ct, IUser user){
+        ct.getChannels().stream().filter(privateChannelFilter(true,user)).forEach(c -> addUser2Channel(event,c,user));
     }
-    
+
     // Leave
     public static void startLeaveUI(MessageReceivedEvent event, List<String> args) {
-        createChannelList(event,false);
+        if(hasChannelsInCategories(event.getGuild(),event.getAuthor(),false)){
+            createInitialQuery(event,false);
+        }else{
+            createChannelList(event,false);
+        }
     }
 
-    private static boolean removeUser(ReactionEvent event, IChannel ch, IUser user) {
+    private static boolean removeUserFromChannel(ReactionEvent event, IChannel ch, IUser user) {
         RequestBuffer.request(() ->ch.removePermissionsOverride(user));
         try {
             event.getClient().getDispatcher().waitFor((ChannelUpdateEvent e) ->
@@ -353,7 +321,171 @@ public class RoleChannels {
         return !ch.getModifiedPermissions(event.getUser()).contains(Permissions.READ_MESSAGES);
     }
 
-    public static void leave(ReactionEvent event) {
+    private static void removeUserFromCategory(ReactionAddEvent event, ICategory ct, IUser user){
+        ct.getChannels().stream().filter(privateChannelFilter(false,user)).forEach(c -> removeUserFromChannel(event,c,user));
+    }
+
+    // Initial Query
+    public static void processInitialQuery(ReactionAddEvent event, IUser user, boolean joining){
+        RequestBuffer.request(() -> event.getMessage().removeAllReactions());
+        switch (event.getReaction().getEmoji().getName()){
+            case ONE:
+                editCategoryList(event.getMessage(),user,0,joining);
+                listReact(event.getMessage(),getCategories(event.getGuild(),user,joining).size());
+                break;
+            case TWO:
+                editChannelList(event.getMessage(),user,0,joining);
+                listReact(event.getMessage(),getChannels(event.getGuild(),user,joining).size());
+                break;
+        }
+
+    }
+
+    private static void createInitialQuery(MessageReceivedEvent event, boolean joining){
+        EmbedObject e = initialQueryEmbed(getChannels(event.getGuild(),event.getAuthor(),joining).isEmpty(),joining);
+        IMessage msg = BotUtils.sendMessage(event.getChannel(),event.getAuthor().mention(),e,-1,false);
+        initialQueryReact(msg);
+    }
+
+    private static EmbedObject initialQueryEmbed(boolean channelListIsEmpty, boolean joining){
+        EmbedBuilder e = new EmbedBuilder();
+        if(channelListIsEmpty){
+            e.withTitle(TITLE_EMPTY_CHLIST[joining? 0 : 1]);
+            return e.build();
+        }
+        e.withTitle(TITLE_INIT_QUERY[joining? 0 : 1]);
+        e.appendDesc("**1:** Categories\n");
+        e.appendDesc("**2:** SingleChannels\n");
+        return e.build();
+    }
+
+    private static void initialQueryReact(IMessage msg){
+        RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ONE))).get();
+        RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(TWO))).get();
+        BotUtils.closeButton(msg);
+    }
+
+    // Channel List
+    public static int processChannelQuery(ReactionAddEvent event, boolean joining){
+        int size=0;
+        // If it was the mentioned user that reacted to a reaction added by the bot
+        if(event.getMessage().getMentions().get(0).equals(event.getUser())){
+            String opt = event.getReaction().getEmoji().getName();
+            LoggerService.log(event.getGuild(),"Selected option: "+ EmojiParser.parseToAliases(opt),LoggerService.INFO);
+            switch (opt) {
+                case ARROW_BACK: {
+                    String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
+                    int page = Integer.parseInt(pageStr) - 1;
+                    editChannelList(event.getMessage(), event.getUser(), page - 1,joining);
+                    break;
+                }
+                case ARROW_FORW: {
+                    String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
+                    int page = Integer.parseInt(pageStr) - 1;
+                    editChannelList(event.getMessage(), event.getUser(), page + 1,joining);
+                    break;
+                }
+                case ONE:
+                case TWO:
+                case THREE:
+                case FOUR:
+                case FIVE:
+                case SIX: {
+                    List<IChannel> chList = getChannels(event.getGuild(), event.getUser(),joining);
+                    String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
+                    int page = Integer.parseInt(pageStr) - 1;
+                    int chNumber = literal2Int(opt);
+
+                    LoggerService.log(event.getGuild(),"Channel list before "+(joining ? "adding" : "removing")+" user: "+ Arrays.toString(chList.stream().map(IChannel::getName).toArray()),LoggerService.INFO);
+                    IChannel ch;
+                    try{
+                        ch = chList.remove((chNumber - 1) + page * 6);
+                    }catch (IndexOutOfBoundsException e){
+                        LoggerService.log(event.getGuild(),"Invalid channel number picked",LoggerService.INFO);
+                        return chList.size();
+                    }
+                    boolean success;
+                    if(joining){
+                        success = addUser2Channel(event, ch, event.getUser());
+                    }else{
+                        success = removeUserFromChannel(event, ch, event.getUser());
+                    }
+                    if(!success){
+                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
+                                new EmbedBuilder().withTitle(":x: Couldn't "+(joining? "join" : "leave") +" channel").build())).get();
+                        BotUtils.contactOwner(event,"Couldn't "+(joining ? "add" : "remove") +event.getUser().getName()+" from "+ch.getName());
+                        try {
+                            TimeUnit.SECONDS.sleep(3);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        size = chList.size()+1;
+                    }else{ size = chList.size();}
+                    LoggerService.log(event.getGuild(),"Channel list after "+(joining ? "adding" : "removing")+" user: "+ Arrays.toString(chList.stream().map(IChannel::getName).toArray()),LoggerService.INFO);
+
+                    editChannelList(event.getMessage(), event.getUser(), page,joining);
+                    break;
+                }
+            }
+        }
+        return size;
+    }
+
+    private static void editChannelList(IMessage message, IUser user, int page, boolean joining) {
+        List<IChannel> chList = getChannels(message.getGuild(),user,joining);
+        EmbedObject e = channelListEmbed(chList,page,joining? JOIN : LEAVE);
+        RequestBuffer.request(() -> message.edit(user.mention(),e)).get();
+        if(chList.isEmpty()){RequestBuffer.request(message::removeAllReactions);}
+    }
+
+    private static void createChannelList(MessageReceivedEvent event, boolean joining){
+        IGuild guild = event.getGuild();
+        IChannel channel = event.getChannel();
+        IUser user = event.getAuthor();
+        List<IChannel> chList = getChannels(guild,user,joining);
+        EmbedObject e = channelListEmbed(chList,0,joining ? JOIN : LEAVE);
+        IMessage msg = BotUtils.sendMessage(channel,user.mention(),e,-1,false);
+        if(chList.size()!=0){listReact(msg,chList.size());}
+    }
+
+    private static EmbedObject channelListEmbed(List<IChannel> chList, int currentPage, int mode) {
+        EmbedBuilder e = new EmbedBuilder();
+        int count = 1;
+        if(chList.size()==0){
+            e.withTitle(TITLE_EMPTY_CHLIST[mode]);
+            return e.build();
+        }
+        // Make a sub list of channels, i.e. a page.
+        LoggerService.log(chList.get(0).getGuild(),"List size: "+chList.size(),LoggerService.INFO);
+        LoggerService.log(chList.get(0).getGuild(),"Channel list: "+ Arrays.toString(chList.stream().map(IChannel::getName).toArray()),LoggerService.INFO);
+        int numPages = (chList.size()-1)/6;
+        if(currentPage*6 >= chList.size()){currentPage=0;}
+        if(currentPage<0){currentPage=numPages;}
+        int from = currentPage*6;
+        int to = from+6 > chList.size() ? chList.size() : from+6;
+        LoggerService.log(chList.get(0).getGuild(),"Making sub list. From: "+from+" To: "+to,LoggerService.INFO);
+        List<IChannel> page = chList.subList(from,to);
+
+        e.withTitle(TITLE_CH_QUERY[mode]);
+        // Print the list to the Embed
+        for(IChannel c : page){
+            e.appendDesc("**"+count+":** "+ c.getName()+"\n");
+            count++;
+        }
+        // Print the page count
+        e.withFooterText("Page "+(currentPage+1)+"/"+(numPages+1));
+
+        return e.build();
+    }
+
+    private static List<IChannel> getChannels(IGuild guild, IUser user, boolean joinable){
+        return guild.getChannels().stream().filter(privateChannelFilter(joinable,user))
+                                           .collect(Collectors.toList());
+    }
+
+    // Category List
+    public static int processCategoryQuery(ReactionAddEvent event, boolean joining){
+        int size = 0;
         // If it was the mentioned user that reacted to a reaction added by the bot
         if(event.getMessage().getMentions().get(0).equals(event.getUser())){
 
@@ -363,13 +495,13 @@ public class RoleChannels {
                 case ARROW_BACK: {
                     String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
                     int page = Integer.parseInt(pageStr) - 1;
-                    editChannelList(event.getMessage(), event.getUser(), page - 1,false);
+                    editCategoryList(event.getMessage(), event.getUser(), page - 1,joining);
                     break;
                 }
                 case ARROW_FORW: {
                     String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
                     int page = Integer.parseInt(pageStr) - 1;
-                    editChannelList(event.getMessage(), event.getUser(), page + 1,false);
+                    editCategoryList(event.getMessage(), event.getUser(), page + 1,joining);
                     break;
                 }
                 case ONE:
@@ -378,99 +510,102 @@ public class RoleChannels {
                 case FOUR:
                 case FIVE:
                 case SIX: {
+                    List<ICategory> ctList = getCategories(event.getGuild(), event.getUser(),joining);
                     String pageStr = event.getMessage().getEmbeds().get(0).getFooter().getText().split("\\s")[1].split("/")[0];
                     int page = Integer.parseInt(pageStr) - 1;
                     int chNumber = literal2Int(opt);
 
-                    IChannel ch;
+                    LoggerService.log(event.getGuild(),"Category list before "+(joining ? "adding" : "removing")+" user: "+ Arrays.toString(ctList.stream().map(ICategory::getName).toArray()),LoggerService.INFO);
+                    ICategory ct;
                     try{
-                        ch = getChannels(event.getGuild(), event.getUser(),false).get((chNumber - 1) + page * 6);
+                        ct = ctList.remove((chNumber - 1) + page * 6);
                     }catch (IndexOutOfBoundsException e){
                         LoggerService.log(event.getGuild(),"Invalid channel number picked",LoggerService.INFO);
-                        return;
+                        return ctList.size();
                     }
-                    LoggerService.log(event.getGuild(),"Channel list before removing user: "+ Arrays.toString(getChannels(event.getGuild(),event.getUser(),false).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
-                    boolean removed = removeUser(event, ch, event.getUser());
-                    if(!removed){
-                        RequestBuffer.request(() -> event.getMessage().edit(event.getUser().mention(),
-                                new EmbedBuilder().withTitle(":x: Couldn't leave channel").build())).get();
-                        BotUtils.contactOwner(event,"Couldn't remove "+event.getUser().getName()+" from "+ch.getName());
-                        try {
-                            TimeUnit.SECONDS.sleep(3);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                    if(joining){
+                        addUser2Category(event,ct,event.getUser());
+                    }else {
+                        removeUserFromCategory(event, ct, event.getUser());
                     }
-                    LoggerService.log(event.getGuild(),"Channel list after removing user: "+ Arrays.toString(getChannels(event.getGuild(),event.getUser(),false).stream().map(IChannel::getName).toArray()),LoggerService.INFO);
+                    LoggerService.log(event.getGuild(),"Category list before "+(joining ? "adding" : "removing")+" user: "+ Arrays.toString(ctList.stream().map(ICategory::getName).toArray()),LoggerService.INFO);
 
-                    editChannelList(event.getMessage(), event.getUser(), page,false);
+                    editCategoryList(event.getMessage(), event.getUser(), page,joining);
+                    size = ctList.size();
                     break;
                 }
             }
         }
+        return size;
+    }
+
+    private static void editCategoryList(IMessage message, IUser user, int page, boolean joining) {
+        List<ICategory> ctList = getCategories(message.getGuild(),user,joining);
+        if(ctList.isEmpty()){
+            editChannelList(message,user,0,joining);
+            RequestBuffer.request(message::removeAllReactions).get();
+            listReact(message,getChannels(message.getGuild(),user,joining).size());
+        }else{
+            EmbedObject e = categoryListEmbed(ctList,page,joining ? JOIN : LEAVE);
+            RequestBuffer.request(() -> message.edit(user.mention(),e)).get();
+        }
+    }
+
+    private static EmbedObject categoryListEmbed(List<ICategory> ctList, int currentPage, int mode){
+
+
+        EmbedBuilder e = new EmbedBuilder();
+        int count = 1;
+        // Make a sub list of channels, i.e. a page.
+        LoggerService.log(ctList.get(0).getGuild(),"List size: "+ctList.size(),LoggerService.INFO);
+        LoggerService.log(ctList.get(0).getGuild(),"Channel list: "+ Arrays.toString(ctList.stream().map(ICategory::getName).toArray()),LoggerService.INFO);
+        int numPages = (ctList.size()-1)/6;
+        if(currentPage*6 >= ctList.size()){currentPage=0;}
+        if(currentPage<0){currentPage=numPages;}
+        int from = currentPage*6;
+        int to = from+6 > ctList.size() ? ctList.size() : from+6;
+        LoggerService.log(ctList.get(0).getGuild(),"Making sub list. From: "+from+" To: "+to,LoggerService.INFO);
+        List<ICategory> page = ctList.subList(from,to);
+
+        e.withTitle(TITLE_CT_QUERY[mode]);
+        // Print the list to the Embed
+        for(ICategory c : page){
+            e.appendDesc("**"+count+":** "+ c.getName()+"\n");
+            count++;
+        }
+        // Print the page count
+        e.withFooterText("Page "+(currentPage+1)+"/"+(numPages+1));
+
+        return e.build();
+    }
+
+    private static List<ICategory> getCategories(IGuild guild, IUser user, boolean joining) {
+        return guild.getCategories().stream()
+                                    .filter(c -> c.getChannels().stream()//has at least one private channel
+                                                                .anyMatch(privateChannelFilter(joining,user)))
+                                    .collect(Collectors.toList());
     }
 
     // Misc
-    private static void createChannelList(MessageReceivedEvent event, boolean joining){
-        IGuild guild = event.getGuild();
-        IChannel channel = event.getChannel();
-        IUser user = event.getAuthor();
-        List<IChannel> chList = getChannels(guild,user,joining);
-        EmbedObject e = channelListEmbed(chList,0,joining ? JOIN : LEAVE);
-        IMessage msg = BotUtils.sendMessage(channel,user.mention(),e,-1,false);
-        channelListReact(msg,chList.size());
-    }
-
-    private static void editChannelList(IMessage message, IUser user, int page, boolean joining) {
-        List<IChannel> chList = getChannels(message.getGuild(),user,joining);
-        EmbedObject e = channelListEmbed(chList,page,joining? JOIN : LEAVE);
-        RequestBuffer.request(() -> {return message.edit(user.mention(),e);}).get();
-    }
-
-    private static EmbedObject channelListEmbed(List<IChannel> chList, int currentPage, int mode) {
-        String[] Title1 = {"No more channels to join. You're EVERYWHERE!", "No more channels to leave."};
-        String[] Title2 = {"Select the channel you want to join!","Select the channel you want to leave!"};
-        EmbedBuilder e = new EmbedBuilder();
-        int count = 1;
-        if(chList.size()==0){
-            e.withTitle(Title1[mode]);
-            return e.build();
-        }else{
-            // Make a sub list of channels, i.e. a page.
-            LoggerService.log(chList.get(0).getGuild(),"List size: "+chList.size(),LoggerService.INFO);
-            LoggerService.log(chList.get(0).getGuild(),"Channel list: "+ Arrays.toString(chList.stream().map(IChannel::getName).toArray()),LoggerService.INFO);
-            int numPages = (chList.size()-1)/6;
-            if(currentPage*6 >= chList.size()){currentPage=0;}
-            if(currentPage<0){currentPage=numPages;}
-            int from = currentPage*6;
-            int to = from+6 > chList.size() ? chList.size() : from+6;
-            LoggerService.log(chList.get(0).getGuild(),"Making sub list. From: "+from+" To: "+to,LoggerService.INFO);
-            List<IChannel> page = chList.subList(from,to);
-
-            e.withTitle(Title2[mode]);
-            // Print the list to the Embed
-            for(IChannel c : page){
-                e.appendDesc("**"+count+":** "+ c.getName()+"\n");
-                count++;
+    private static void listReact(IMessage msg, int size){
+        if(size>6){
+            RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ARROW_BACK))).get();
+            for(int i=0;i<6;i++){
+                int finalI = i;
+                RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(NUMBERS[finalI]))).get();
             }
-            // Print the page count
-            e.withFooterText("Page "+(currentPage+1)+"/"+(numPages+1));
-
-            return e.build();
+            RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ARROW_FORW))).get();
+        }else{
+            for(int i=0;i<size;i++){
+                int finalI = i;
+                RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(NUMBERS[finalI]))).get();
+            }
         }
+        BotUtils.closeButton(msg);
     }
 
-    private static void channelListReact(IMessage msg, int size){
-        LoggerService.log(msg.getGuild(),"page: "+ 0 +" size: "+size+" ((size-1)%6)+1: "+((size-1)%6)+1,LoggerService.INFO);
-        RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ARROW_BACK))).get();
-        boolean isLastPage = 0 >=(size-1)/6;
-        int count = size==0 ? 0 : (isLastPage ? ((size-1)%6)+1 : 6);
-        for(int i=0;i<count;i++){
-            int finalI = i;
-            RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(NUMBERS[finalI]))).get();
-        }
-        RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ARROW_FORW))).get();
-        BotUtils.closeButton(msg);
+    private static boolean hasChannelsInCategories(IGuild guild, IUser user, boolean joining) {
+        return getChannels(guild,user,joining).stream().anyMatch(ch -> ch.getCategory()!=null);
     }
 
     private static boolean noArgs(IChannel ch, List<String> args){
@@ -479,13 +614,6 @@ public class RoleChannels {
             return false;
         }
         return true;
-    }
-
-    private static List<IChannel> getChannels(IGuild guild, IUser user, boolean joinable){
-        return guild.getChannels().stream().filter(c -> (c.getTopic() != null
-                && c.getTopic().startsWith(PRIVATE_MARKER)
-                && joinable != c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)))
-                .collect(Collectors.toList());
     }
 
     private static int literal2Int(String literal){
@@ -505,5 +633,31 @@ public class RoleChannels {
                 number = 6; break;
         }
         return number;
+    }
+
+    private static Predicate<IChannel> privateChannelFilter(boolean joinable, IUser user){
+        return (c -> (c.getTopic() != null && c.getTopic().startsWith(PRIVATE_MARKER) && joinable != c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)));
+    }
+    //TODO For some reason getReactions is not getting an updated reaction
+    public static void cutSuperfluousReactions(IMessage message, int size) {
+        List<String> rList = message.getReactions().stream().map(r -> r.getEmoji().getName()).collect(Collectors.toList());
+        LoggerService.log(message.getGuild(),"Reaction List: "+rList.toString(),LoggerService.INFO);
+        if(rList.contains(ARROW_BACK)){remReactFromMsg(message,ARROW_BACK);}
+        if(rList.contains(ARROW_FORW)){remReactFromMsg(message,ARROW_FORW);}
+        for(int i=5; i>=size; i--){
+            if(rList.contains(NUMBERS[i])){remReactFromMsg(message,NUMBERS[i]);}
+        }
+    }
+
+    private static void remReactFromMsg(IMessage msg, String reaction){
+        try{
+            LoggerService.log(msg.getGuild(),"Removing "+reaction+" from a message",LoggerService.INFO);
+            List<IUser> users = msg.getReactionByEmoji(ReactionEmoji.of(reaction)).getUsers();
+            users.forEach(u -> RequestBuffer.request(() -> msg.removeReaction(u,ReactionEmoji.of(reaction))).get());
+        }catch (NullPointerException e){
+            LoggerService.log(msg.getGuild(),"Tried to remove a non-existant reaction",LoggerService.ERROR);
+        }catch (Exception e){
+            LoggerService.log(msg.getGuild(),e.getClass().getCanonicalName()+":"+e.getMessage(),LoggerService.ERROR);
+        }
     }
 }
