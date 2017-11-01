@@ -29,6 +29,8 @@ public class SfxModule {
         commandMap.put("<RETRIEVE", SfxModule::sfxRetrieve);
     }
     public static void sfx(MessageReceivedEvent event, List<String> args){
+        BotUtils.sendMessage(event.getChannel(),"Sfx is disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
+        return;/*
         if (args.size() == 0) {
             HashMap<String, Set<String>> cmds = new HashMap<>();
             Set<String> options = new HashSet<>();
@@ -42,12 +44,12 @@ public class SfxModule {
             commandMap.get(args.get(0)).runCommand(event,args.subList(1,args.size()));
         }else{
             sfxPlay(event,args);
-        }
+        }*/
     }
     public static void sfxPlay(MessageReceivedEvent event, List<String> args) {
         IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
         if (vChannel == null) {
-            BotUtils.sendMessage(event.getChannel(), "Please joinChannel a voice channel before using this command!", 120, false);
+            BotUtils.sendMessage(event.getChannel(), "Please join a voice channel before using this command!", 120, false);
             return;
         }
         String searchStr = String.join(" ", args);

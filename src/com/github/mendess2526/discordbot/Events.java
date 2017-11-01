@@ -63,7 +63,7 @@ public class Events {
         Main.initialiseGreetings(event.getGuild());
         Main.initialiseServerSettings(event.getGuild());
     }
-    //TODO Make this esle if a case and define the literals at top level in RoleChannels
+
     @EventSubscriber
     public void reactionEvent(ReactionAddEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
