@@ -32,6 +32,9 @@ public class Greetings {
 
     // Class methods
     public static void greetings(MessageReceivedEvent event, List<String> args) {
+        BotUtils.sendMessage(event.getChannel(),"Greetings are disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
+        return;
+        /*
         if(canGreet(event)){
             if (args.size() == 0 || !commandMap.containsKey(args.get(0))) {
                 if(args.size()!=0){LoggerService.log(event.getGuild(),"Invalid Argument: "+args.get(0),LoggerService.INFO);}
@@ -48,7 +51,7 @@ public class Greetings {
             }
         }else{
             BotUtils.sendMessage(event.getChannel(),"Greetings are disabled in this server",120,false);
-        }
+        }*/
     }
     private static void list(MessageReceivedEvent event, List<String> strings) {
         Main.greetings.get(event.getGuild().getLongID()).list(event.getChannel());
@@ -174,8 +177,10 @@ public class Greetings {
             audioP.queue(songDir[0]);
         } catch (IOException e) {
             LoggerService.log(event.getGuild(),"Greet failed: "+e.getMessage(), LoggerService.ERROR);
+            vChannel.leave();
         } catch (UnsupportedAudioFileException e) {
             LoggerService.log(event.getGuild(),"Greet failed: "+e.getMessage(), LoggerService.ERROR);
+            vChannel.leave();
             e.printStackTrace();
         }
     }

@@ -70,9 +70,11 @@ public class SfxModule {
         } catch (IOException e) {
             LoggerService.log(event.getGuild(),e.getMessage(), LoggerService.ERROR);
             BotUtils.sendMessage(event.getChannel(), "There was a problem playing that sound.", 120, false);
+            vChannel.leave();
         } catch (UnsupportedAudioFileException e) {
             LoggerService.log(event.getGuild(),e.getMessage(), LoggerService.ERROR);
             BotUtils.sendMessage(event.getChannel(), "There was a problem playing that sound.", 120, false);
+            vChannel.leave();
             e.printStackTrace();
         }
     }

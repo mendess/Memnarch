@@ -114,6 +114,7 @@ public class Events {
             event.getUser().getOrCreatePMChannel().sendMessage(msg);
         }
     }
+    /*
     @EventSubscriber
     public void userVoiceJoin(UserVoiceChannelJoinEvent event) throws InterruptedException {
         if(Greetings.canGreet(event)){
@@ -134,7 +135,7 @@ public class Events {
                 LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.INFO);
             }
         }
-    }
+    }*/
     @EventSubscriber
     public void userVoiceLeave(UserVoiceChannelLeaveEvent event){
         if(event.getVoiceChannel().getConnectedUsers().contains(event.getClient().getOurUser())
