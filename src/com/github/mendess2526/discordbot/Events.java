@@ -166,7 +166,7 @@ public class Events {
             return;
         }
 
-        String command[] = event.getMessage().getContent().toUpperCase().split("\\s");
+        String command[] = event.getMessage().getContent().split("\\s");
 
         if(command.length == 0){
             return;
@@ -176,7 +176,7 @@ public class Events {
         }else{
             LoggerService.log(event.getGuild(),"Command: "+ Arrays.toString(command),LoggerService.INFO);
         }
-        String cmd = command[0].substring(1);
+        String cmd = command[0].substring(1).toUpperCase();
 
         List<String> args = new ArrayList<>(Arrays.asList(command));
         args.remove(0);
@@ -191,10 +191,10 @@ public class Events {
             return;
         }
         if(key.length==1 && commandMap.containsKey(key[0]) && commandMap.get(key[0]).containsKey(cmd)){
-            LoggerService.log(event.getGuild(),"Valid command: "+cmd, LoggerService.INFO);
+            LoggerService.log(event.getGuild(),"Valid command: "+cmd, LoggerService.SUCC);
             commandMap.get(key[0]).get(cmd).runCommand(event,args);
         }else{
-            LoggerService.log(event.getGuild(),"Invalid command: "+cmd, LoggerService.INFO);
+            LoggerService.log(event.getGuild(),"Invalid command: "+cmd, LoggerService.UERROR);
         }
     }
 }
