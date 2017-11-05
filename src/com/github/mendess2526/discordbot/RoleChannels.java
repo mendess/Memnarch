@@ -445,7 +445,7 @@ public class RoleChannels {
         List<IChannel> chList = getChannels(guild,user,joining);
         EmbedObject e = channelListEmbed(chList,0,joining ? JOIN : LEAVE);
         IMessage msg = BotUtils.sendMessage(channel,user.mention(),e,-1,false);
-        if(chList.size()!=0){listReact(msg,chList.size());}
+        listReact(msg,chList.size());
     }
 
     private static EmbedObject channelListEmbed(List<IChannel> chList, int currentPage, int mode) {

@@ -37,8 +37,8 @@ public class Events {
         miscMap.put("HELP", MiscCommands::help);
         miscMap.put("PING", MiscCommands::ping);
         miscMap.put("HI", MiscCommands::hi);
-        //miscMap.put("RESTART",MiscCommands::restart);
         miscMap.put("WHOAREYOU",MiscCommands::whoAreYou);
+        miscMap.put("SHUTDOWN",MiscCommands::shutdown);
 
         rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
         rolechannelsMap.put("JOIN", RoleChannels::startJoinUI);

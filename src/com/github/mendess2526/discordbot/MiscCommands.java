@@ -25,21 +25,15 @@ public class MiscCommands{
         LocalDateTime respondTime = LocalDateTime.now();
         BotUtils.sendMessage(event.getChannel(),new EmbedBuilder().withTitle("Pong! "+(askTime.until(respondTime, ChronoUnit.MILLIS))+" ms").build(),120,true);
     }
+
     public static void hi(MessageReceivedEvent event, List<String> args) {
         BotUtils.sendMessage(event.getChannel(),"Hello, minion!",-1,false);
     }
 
-    public static void restart(MessageReceivedEvent event, List<String> strings) {
-        BotUtils.sendMessage(event.getChannel(),"Restarting...",-1,false);
+    public static void shutdown(MessageReceivedEvent event, List<String> strings) {
+        BotUtils.sendMessage(event.getChannel(),"Shutting down...",-1,false);
         IDiscordClient client = event.getClient();
         client.logout();
-        try {
-            TimeUnit.SECONDS.sleep(5);
-        } catch (InterruptedException e) {
-            LoggerService.log(event.getGuild(),"Interrupted while restarting",LoggerService.ERROR);
-            e.printStackTrace();
-        }
-        client.login();
     }
 
     public static void whoAreYou(MessageReceivedEvent event, List<String> strings) {
