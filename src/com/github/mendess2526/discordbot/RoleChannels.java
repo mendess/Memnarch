@@ -9,6 +9,7 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.Reactio
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
+import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.MissingPermissionsException;
 import sx.blah.discord.util.RequestBuffer;
@@ -64,13 +65,14 @@ public class RoleChannels {
     // Managing Channels
     public static void handle(MessageReceivedEvent event, List<String> args){
         if(BotUtils.hasPermission(event,permissions)) {
-            if (args.size() == 0 || !commandMap.containsKey(args.get(0))) {
+            if (args.size() == 0 || !commandMap.containsKey(args.get(0).toUpperCase())) {
                 if (args.size() != 0) LoggerService.log(event.getGuild(), "Invalid Argument: " + args.get(0), LoggerService.INFO);
                 HashMap<String, Set<String>> cmds = new HashMap<>();
                 cmds.put("Rolechannels", commandMap.keySet());
                 BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
             } else {
-                commandMap.get(args.get(0)).runCommand(event, args.subList(1, args.size()));
+                LoggerService.log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), LoggerService.INFO);
+                commandMap.get(args.get(0).toUpperCase()).runCommand(event, args.subList(1, args.size()));
             }
         }
     }
@@ -93,12 +95,15 @@ public class RoleChannels {
         ch = RequestBuffer.request(() -> {
             try{
                 return guild.createChannel(name);
-            }catch (MissingPermissionsException e){
+            }catch (MissingPermissionsException e) {
+                LoggerService.log(event.getGuild(), "Couldn't create channel. Missing Permissions: " + e.getMissingPermissions(), LoggerService.ERROR);
+                return null;
+            }catch (DiscordException e){
+                LoggerService.log(event.getGuild(),"Couldn't create channel. Error Message: "+e.getErrorMessage(),LoggerService.ERROR);
                 return null;
             }
         }).get();
         if(ch==null){
-            LoggerService.log(event.getGuild(),"Couldn't create channel",LoggerService.ERROR);
             BotUtils.sendMessage(event.getChannel(),"Couldn't create channel, maybe I'm missing permissions?",120,false);
             return;
         }
@@ -154,6 +159,7 @@ public class RoleChannels {
         try {
             id = Long.parseLong(args.get(0).replaceAll("<", "").replaceAll("#", "").replaceAll(">", ""));
         }catch (NumberFormatException e){
+            LoggerService.log(event.getGuild(),"Bad channel id: "+args.get(0),LoggerService.UERROR);
             BotUtils.sendMessage(event.getChannel(),"Use `#` to specify what channel you want to delete.",120,false);
             return;
         }
@@ -610,10 +616,11 @@ public class RoleChannels {
 
     private static boolean noArgs(IChannel ch, List<String> args){
         if(args.size()==0){
+            LoggerService.log(ch.getGuild(),"User didn't provide channel ID",LoggerService.UERROR);
             BotUtils.sendMessage(ch,"Please provide a channel ID",30,false);
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     private static int literal2Int(String literal){

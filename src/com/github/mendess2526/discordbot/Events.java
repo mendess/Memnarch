@@ -159,8 +159,9 @@ public class Events {
     }
     @EventSubscriber
     public void messageReceived(MessageReceivedEvent event) {
-        // When @everyone is tagged with a ? in the same message
-        if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")){
+        // When @everyone is tagged with a ? in the same message. Doesn't trigger on links
+        if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")
+            && !event.getMessage().getContent().contains("https")){
             RequestBuffer.request(() -> event.getMessage().addReaction(ReactionEmoji.of(CHECK_MARK))).get();
             RequestBuffer.request(() -> event.getMessage().addReaction(ReactionEmoji.of(RED_X))).get();
             return;
@@ -173,26 +174,26 @@ public class Events {
         }
         if(!command[0].startsWith(BOT_PREFIX)){
             return;
-        }else{
-            LoggerService.log(event.getGuild(),"Command: "+ Arrays.toString(command),LoggerService.INFO);
         }
+
         String cmd = command[0].substring(1).toUpperCase();
 
         List<String> args = new ArrayList<>(Arrays.asList(command));
+        LoggerService.log(event.getGuild(),"Command: "+ args,LoggerService.INFO);
         args.remove(0);
-        String[] key = commandMap.keySet()
+        String[] commandGroup = commandMap.keySet()
                                  .stream()
                                  .filter(k -> commandMap.get(k).containsKey(cmd))
                                  .collect(Collectors.toSet())
                                  .toArray(new String[0]);
-        if(key.length>1){
+        if(commandGroup.length>1){
             BotUtils.contactOwner(event,"More then one command with the same name: "+event.getMessage().getContent());
             LoggerService.log(event.getGuild(),"There is more than one command group with the same command, contacting owner",LoggerService.ERROR);
             return;
         }
-        if(key.length==1 && commandMap.containsKey(key[0]) && commandMap.get(key[0]).containsKey(cmd)){
+        if(commandGroup.length==1 && commandMap.containsKey(commandGroup[0]) && commandMap.get(commandGroup[0]).containsKey(cmd)){
             LoggerService.log(event.getGuild(),"Valid command: "+cmd, LoggerService.SUCC);
-            commandMap.get(key[0]).get(cmd).runCommand(event,args);
+            commandMap.get(commandGroup[0]).get(cmd).runCommand(event,args);
         }else{
             LoggerService.log(event.getGuild(),"Invalid command: "+cmd, LoggerService.UERROR);
         }

@@ -27,12 +27,13 @@ public class ServerSettings {
     public static void serverSettings(MessageReceivedEvent event, List<String> args) {
         LoggerService.log(event.getGuild(), "Server settings args: " + args.toString(), LoggerService.INFO);
         if (BotUtils.hasPermission(event, EnumSet.of(Permissions.MANAGE_SERVER))) {
-            if (args.size() == 0 || !commandMap.containsKey(args.get(0))) {
+            if (args.size() == 0 || !commandMap.containsKey(args.get(0).toUpperCase())) {
                 HashMap<String, Set<String>> cmds = new HashMap<>();
                 cmds.put("ServerSettings", commandMap.keySet());
                 BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
             } else {
-                commandMap.get(args.get(0)).runCommand(event, args.subList(1, args.size()));
+                LoggerService.log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), LoggerService.INFO);
+                commandMap.get(args.get(0).toUpperCase()).runCommand(event, args.subList(1, args.size()));
             }
         }
     }

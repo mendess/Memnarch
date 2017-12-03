@@ -27,7 +27,7 @@ public class Config {
         Wini iniFile;
         lock.readLock().lock();
         iniFile = new Wini(file);
-        lock.writeLock().unlock();
+        lock.readLock().unlock();
         if(!iniFile.containsKey("connection")){
             LoggerService.log(null,"No token set",LoggerService.ERROR);
             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));

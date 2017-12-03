@@ -33,10 +33,9 @@ public class Greetings {
     // Class methods
     public static void greetings(MessageReceivedEvent event, List<String> args) {
         BotUtils.sendMessage(event.getChannel(),"Greetings are disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
-        return;
         /*
         if(canGreet(event)){
-            if (args.size() == 0 || !commandMap.containsKey(args.get(0))) {
+            if (args.size() == 0 || !commandMap.containsKey(args.get(0).toUpperCase())) {
                 if(args.size()!=0){LoggerService.log(event.getGuild(),"Invalid Argument: "+args.get(0),LoggerService.INFO);}
                 HashMap<String, Set<String>> cmds = new HashMap<>();
                 cmds.put("Greetings", commandMap.keySet());
@@ -46,8 +45,8 @@ public class Greetings {
                 BotUtils.sendMessage(event.getChannel(),eb.build(),120,false);
                 BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
             }else {
-                LoggerService.log(event.getGuild(), "Valid Argument: " + args.get(0), LoggerService.INFO);
-                commandMap.get(args.get(0)).runCommand(event, args.subList(1, args.size()));
+                LoggerService.log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), LoggerService.INFO);
+                commandMap.get(args.get(0).toUpperCase()).runCommand(event, args.subList(1, args.size()));
             }
         }else{
             BotUtils.sendMessage(event.getChannel(),"Greetings are disabled in this server",120,false);

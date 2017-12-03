@@ -30,7 +30,7 @@ public class SfxModule {
     }
     public static void sfx(MessageReceivedEvent event, List<String> args){
         BotUtils.sendMessage(event.getChannel(),"Sfx is disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
-        return;/*
+        /*
         if (args.size() == 0) {
             HashMap<String, Set<String>> cmds = new HashMap<>();
             Set<String> options = new HashSet<>();
@@ -40,8 +40,9 @@ public class SfxModule {
             BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
             return;
         }
-        if(args.get(0).startsWith("<")){
-            commandMap.get(args.get(0)).runCommand(event,args.subList(1,args.size()));
+        if(args.get(0).startsWith("<") && commandMap.containsKey(args.get(0).toUpperCase())){
+            LoggerService.log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), LoggerService.INFO);
+            commandMap.get(args.get(0).toUpperCase()).runCommand(event,args.subList(1,args.size()));
         }else{
             sfxPlay(event,args);
         }*/
