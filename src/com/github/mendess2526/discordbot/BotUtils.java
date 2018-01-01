@@ -26,24 +26,30 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
-public class BotUtils {
-    private static String ERROR_SMTH_WRONG = "Something went wrong, contact the owner of the bot";
-    public static final String X = "\u2716";//"\u274C";
+import static com.github.mendess2526.discordbot.LoggerService.*;
 
-    public static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
+@SuppressWarnings("UnusedReturnValue")
+public class BotUtils {
+
+    private static final String ERROR_SMTH_WRONG = "Something went wrong, contact the owner of the bot";
+    static final String X = "\u2716";//"\u274C";
+    static final String R = "\uD83C\uDDF7";
+    static final String DEFAULT_FILE_PATH = "./files/";
+
+    private static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
         Thread t = new Thread(() -> {
             try {
                 TimeUnit.SECONDS.sleep(delay);
                 client.getDispatcher().waitFor(MessageReceivedEvent.class,120,TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                LoggerService.log(msg.getGuild(),"Interrupted while waiting for a Message received event on sfxadd",LoggerService.ERROR);
+                log(msg.getGuild(),"Interrupted while waiting to autoDelete Message", ERROR);
             }
             msg.delete();
         });
         t.start();
     }
-    public static void contactOwner(Event event, String msg){
+
+    static void contactOwner(Event event, String msg){
         if(event instanceof MessageReceivedEvent){
             MessageReceivedEvent e = (MessageReceivedEvent) event;
             String guild = e.getGuild().getName();
@@ -55,52 +61,56 @@ public class BotUtils {
                                 "[Channel: "+channel+"]```"));
         }
     }
-
-    public static IMessage sendMessage(IChannel channel, String message, int autoDeleteDelay, boolean reactCross){
+    @SuppressWarnings("SameParameterValue")
+    static IMessage sendMessage(IChannel channel, String message, int autoDeleteDelay, boolean reactCross){
         IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(message);}).get();
         if(reactCross){closeButton(msg);}
         if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
         return msg;
     }
-
-    public static IMessage sendMessage(IChannel channel, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
+    @SuppressWarnings("SameParameterValue")
+    static IMessage sendMessage(IChannel channel, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
         IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(eb);}).get();
         if(reactCross){closeButton(msg);}
         if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
         return msg;
     }
-    public static IMessage sendMessage(IChannel channel, String message, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
+
+    static IMessage sendMessage(IChannel channel, String message, EmbedObject eb, int autoDeleteDelay,
+                                boolean reactCross){
         IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(message,eb);}).get();
         if(reactCross){closeButton(msg);}
         if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
         return msg;
     }
 
-    public static void sendFile(IChannel ch, File file) {
+    static void sendFile(IChannel ch, File file) {
         RequestBuffer.request(() -> {
             try {
                 ch.sendFile(file);
             } catch (FileNotFoundException e) {
-                LoggerService.log(ch.getGuild(),"File not found when sending to channel",LoggerService.ERROR);
+                log(ch.getGuild(),"File not found when sending to channel", ERROR);
                 e.printStackTrace();
             }
         }).get();
     }
 
-    public static void closeButton(IMessage msg){
+    static void closeButton(IMessage msg){
         RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(X))).get();
     }
+    @SuppressWarnings("unused")
     public static void waitForReaction(IMessage msg, String reaction){
         if(msg.getReactionByUnicode(reaction)==null){
             try {
                 msg.getClient().getDispatcher().waitFor((ReactionEvent e) -> msg.getReactionByUnicode(reaction)==null,2,TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                LoggerService.log(msg.getGuild(),"Interrupted while waiting for close button",LoggerService.ERROR);
+                log(msg.getGuild(),"Interrupted while waiting for close button", ERROR);
                 e.printStackTrace();
             }
         }
     }
-    public static void help(IUser user, IChannel channel, Map<String,Set<String>> commands) {
+
+    static void help(IUser user, IChannel channel, Map<String,Set<String>> commands) {
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of available commands for:");
         commands.keySet().forEach(k -> {
@@ -111,7 +121,8 @@ public class BotUtils {
         eb.withFooterText("Prefix: "+Events.BOT_PREFIX);
         sendMessage(channel,user.mention(),eb.build(),-1,true);
     }
-    public static boolean hasPermission(MessageReceivedEvent event, Set<Permissions> permissions){
+
+    static boolean hasPermission(MessageReceivedEvent event, Set<Permissions> permissions){
         if(!event.getAuthor().equals(event.getClient().getApplicationOwner())
             && !event.getAuthor().getPermissionsForGuild(event.getGuild()).containsAll(permissions)){
             sendMessage(event.getChannel(), "You don't have permission to use that command", 120, false);
@@ -120,61 +131,63 @@ public class BotUtils {
             return true;
         }
     }
-    public static void downloadFile(MessageReceivedEvent event, IMessage.Attachment attach, String folderName){
+    @SuppressWarnings("SameParameterValue")
+    static void downloadFile(MessageReceivedEvent event, IMessage.Attachment attach, String folderName){
         String[] name = attach.getFilename().split(Pattern.quote("."));
         String filename = attach.getFilename().replaceAll(Pattern.quote("_")," ");
         if(!name[name.length-1].equals("mp3")){
-            BotUtils.sendMessage(event.getChannel(),"You can only add `.mp3` files",120,false);
+            sendMessage(event.getChannel(),"You can only add `.mp3` files",120,false);
         }else if(attach.getFilesize()>204800) {
-            BotUtils.sendMessage(event.getChannel(), "File too big, please keep it under 200kb", 120, false);
+            sendMessage(event.getChannel(), "File too big, please keep it under 200kb", 120, false);
         }else if(new File(folderName+"/"+filename).exists()){
-            BotUtils.sendMessage(event.getChannel(),"File with that name already exists",120,false);
+            sendMessage(event.getChannel(),"File with that name already exists",120,false);
         }else {
             if(!new File(folderName).exists()) {
                 if (!mkFolder(event,folderName)) {
                     return;
                 }
             }
-            LoggerService.log(event.getGuild(),"Filepath: "+folderName+"/"+filename,LoggerService.INFO);
+            log(event.getGuild(),"FilePath: "+folderName+"/"+filename, INFO);
             URL url;
             ReadableByteChannel rbc;
             FileOutputStream fos;
             try {
                 url = new URL(attach.getUrl());
-                HttpURLConnection httpcon = (HttpURLConnection) url.openConnection();
-                httpcon.addRequestProperty("User-Agent", "Mozilla/4.0");
-                rbc = Channels.newChannel(httpcon.getInputStream());
+                HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+                httpCon.addRequestProperty("User-Agent", "Mozilla/4.0");
+                rbc = Channels.newChannel(httpCon.getInputStream());
                 fos = new FileOutputStream(folderName+"/"+filename);
                 fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
             } catch (MalformedURLException e) {
-                LoggerService.log(event.getGuild(),"Malformed Url: \""+attach.getUrl()+"\" File: "+filename,LoggerService.ERROR);
+                log(event.getGuild(),"Malformed Url: \""+attach.getUrl()+"\" File: "+filename, ERROR);
                 e.printStackTrace();
                 return;
             } catch (FileNotFoundException e) {
-                LoggerService.log(event.getGuild(),"File not found: "+filename,LoggerService.ERROR);
+                log(event.getGuild(),"File not found: "+filename, ERROR);
                 e.printStackTrace();
                 return;
             } catch (IOException e) {
-                LoggerService.log(event.getGuild(),"IOException for file: "+filename,LoggerService.ERROR);
+                log(event.getGuild(),"IOException for file: "+filename, ERROR);
                 e.printStackTrace();
                 return;
             }
             if(new File(folderName+"/"+filename).exists()){
-                BotUtils.sendMessage(event.getChannel(),"File added successfully!",-1,false);
+                sendMessage(event.getChannel(),"File added successfully!",-1,false);
             }else{
-                BotUtils.sendMessage(event.getChannel(),"File couldn't be added",120,false);
+                sendMessage(event.getChannel(),"File couldn't be added",120,false);
             }
         }
     }
-    public static boolean mkFolder(Event event, String folderName){
+
+    static boolean mkFolder(Event event, String folderName){
         boolean success = !new File(folderName).mkdirs();
         if (!success) {
             IGuild guild = null;
             if(event instanceof GuildEvent){
                 guild = ((GuildEvent) event).getGuild();
             }
-            BotUtils.contactOwner(event,"Couldn't create "+folderName+" folder");
-            LoggerService.log(guild,"Couldn't create "+folderName+" folder",LoggerService.ERROR);
+            contactOwner(event,"Couldn't create "+folderName+" folder");
+            log(guild,"Couldn't create "+folderName+" folder", ERROR);
         }
         return success;
     }

@@ -5,7 +5,6 @@ import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
 import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
-import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelLeaveEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IUser;
@@ -19,51 +18,58 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("WeakerAccess")
+import static com.github.mendess2526.discordbot.LoggerService.*;
+
 public class Events {
-    public final static String BOT_PREFIX = "|";
-    public static final String CHECK_MARK = "\u2705";
-    public static final String RED_X = "\u274C";
 
-    public static Map<String, Command> miscMap = new HashMap<>();
-    public static Map<String, Command> sfxMap = new HashMap<>();
-    public static Map<String, Command> rolechannelsMap = new HashMap<>();
-    public static Map<String, Command> greetingsMap = new HashMap<>();
-    public static Map<String, Command> serverSettingsMap = new HashMap<>();
+    final static String BOT_PREFIX = "|";
+    private static final String CHECK_MARK = "\u2705";
+    private static final String RED_X = "\u274C";
 
-    public static Map<String, Map<String, Command>> commandMap = new HashMap<>();
+    private static final Map<String, Command> miscMap = new HashMap<>();
+    private static final Map<String, Command> sfxMap = new HashMap<>();
+    private static final Map<String, Command> roleChannelsMap = new HashMap<>();
+    private static final Map<String, Command> greetingsMap = new HashMap<>();
+    private static final Map<String, Command> serverSettingsMap = new HashMap<>();
+
+    static final Map<String, Map<String, Command>> commandMap = new HashMap<>();
 
     static {
         miscMap.put("HELP", MiscCommands::help);
         miscMap.put("PING", MiscCommands::ping);
         miscMap.put("HI", MiscCommands::hi);
+        //noinspection SpellCheckingInspection
         miscMap.put("WHOAREYOU",MiscCommands::whoAreYou);
         miscMap.put("SHUTDOWN",MiscCommands::shutdown);
-
-        rolechannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
-        rolechannelsMap.put("JOIN", RoleChannels::startJoinUI);
-        rolechannelsMap.put("LEAVE", RoleChannels::startLeaveUI);
+        //noinspection SpellCheckingInspection
+        miscMap.put("RRANK",MiscTasks::rRank);
+        //noinspection SpellCheckingInspection
+        roleChannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
+        roleChannelsMap.put("JOIN", RoleChannels::startJoinUI);
+        roleChannelsMap.put("LEAVE", RoleChannels::startLeaveUI);
 
         sfxMap.put("SFX", SfxModule::sfx);
+        //noinspection SpellCheckingInspection
         sfxMap.put("SFXLIST", SfxModule::sfxList);
 
         greetingsMap.put("GREET",Greetings::greetings);
-
+        //noinspection SpellCheckingInspection
         serverSettingsMap.put("SERVERSET",ServerSettings::serverSettings);
 
         commandMap.put("Miscellaneous",miscMap);
         commandMap.put("Sfx",sfxMap);
-        commandMap.put("Rolechannels",rolechannelsMap);
+        commandMap.put("RoleChannels", roleChannelsMap);
         commandMap.put("Greetings",greetingsMap);
         commandMap.put("Server Settings",serverSettingsMap);
 
     }
+
     @EventSubscriber
     public void guildJoin(GuildCreateEvent event){
         Main.initialiseGreetings(event.getGuild());
         Main.initialiseServerSettings(event.getGuild());
     }
-
+    //TODO refactor this according to MVC
     @EventSubscriber
     public void reactionEvent(ReactionAddEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
@@ -73,7 +79,7 @@ public class Events {
             List<IUser> mentions = event.getMessage().getMentions();
             if(mentions.isEmpty() || mentions.contains(event.getUser())){
                 if(event.getReaction().getEmoji().getName().equals(BotUtils.X)){
-                    LoggerService.log(event.getGuild(),event.getUser().getName()+" clicked an :heavy_multiplication_x:",LoggerService.INFO);
+                    log(event.getGuild(),event.getUser().getName()+" clicked an :heavy_multiplication_x:", INFO);
                     event.getMessage().delete();
                 }else{
                     int size = 0;
@@ -103,6 +109,11 @@ public class Events {
                     }
                     if(size>0 && size<7){RoleChannels.cutSuperfluousReactions(event.getMessage(),size);}
                 }
+            }
+        }
+        if(!event.getReaction().getUserReacted(event.getClient().getOurUser())){
+            if(event.getReaction().getEmoji().getName().equals(BotUtils.R)){
+                MiscTasks.handleR(event);
             }
         }
     }
@@ -143,22 +154,29 @@ public class Events {
             event.getVoiceChannel().leave();
         }
     }
+
     @EventSubscriber
     public void trackStarted(TrackStartEvent event){
         if(Main.leaveVoice != null){
             Main.leaveVoice.cancel(true);
-            LoggerService.log(event.getPlayer().getGuild(),"Leave canceled",LoggerService.INFO);
+            log(event.getPlayer().getGuild(),"Leave canceled", INFO);
         }
     }
+
     @EventSubscriber
     public void trackFinished(TrackFinishEvent event){
-        LoggerService.log(event.getPlayer().getGuild(),"Scheduling leaveChannel",LoggerService.INFO);
+        log(event.getPlayer().getGuild(),"Scheduling leaveChannel", INFO);
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
         Main.leaveVoice = executor.schedule(leave,1, TimeUnit.MINUTES);
     }
+
     @EventSubscriber
     public void messageReceived(MessageReceivedEvent event) {
+        if(event.getMessage().getContent().contains(BotUtils.R)){
+            MiscTasks.handleR(event);
+        }
+
         // When @everyone is tagged with a ? in the same message. Doesn't trigger on links
         if(event.getMessage().mentionsEveryone() && event.getMessage().getContent().contains("?")
             && !event.getMessage().getContent().contains("https")){
@@ -179,7 +197,7 @@ public class Events {
         String cmd = command[0].substring(1).toUpperCase();
 
         List<String> args = new ArrayList<>(Arrays.asList(command));
-        LoggerService.log(event.getGuild(),"Command: "+ args,LoggerService.INFO);
+        log(event.getGuild(),"Command: "+ args, INFO);
         args.remove(0);
         String[] commandGroup = commandMap.keySet()
                                  .stream()
@@ -188,14 +206,14 @@ public class Events {
                                  .toArray(new String[0]);
         if(commandGroup.length>1){
             BotUtils.contactOwner(event,"More then one command with the same name: "+event.getMessage().getContent());
-            LoggerService.log(event.getGuild(),"There is more than one command group with the same command, contacting owner",LoggerService.ERROR);
+            log(event.getGuild(),"There is more than one command group with the same command, contacting owner", ERROR);
             return;
         }
         if(commandGroup.length==1 && commandMap.containsKey(commandGroup[0]) && commandMap.get(commandGroup[0]).containsKey(cmd)){
-            LoggerService.log(event.getGuild(),"Valid command: "+cmd, LoggerService.SUCC);
+            log(event.getGuild(),"Valid command: "+cmd, SUCC);
             commandMap.get(commandGroup[0]).get(cmd).runCommand(event,args);
         }else{
-            LoggerService.log(event.getGuild(),"Invalid command: "+cmd, LoggerService.UERROR);
+            log(event.getGuild(),"Invalid command: "+cmd, UERROR);
         }
     }
 }

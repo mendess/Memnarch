@@ -19,88 +19,98 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("WeakerAccess")
+import static com.github.mendess2526.discordbot.BotUtils.*;
+import static com.github.mendess2526.discordbot.LoggerService.*;
+
+@SuppressWarnings({"unused", "MismatchedQueryAndUpdateOfCollection"})
 public class Greetings {
     // Class variables
     private static Map<String,Command> commandMap = new HashMap<>();
     static {
-        commandMap.put("ME",Greetings::greetme);
+        commandMap.put("ME",Greetings::greetMe);
         commandMap.put("ADD",Greetings::addGreeting);
         commandMap.put("REMOVE",Greetings::removeGreeting);
         commandMap.put("LIST",Greetings::list);
     }
 
     // Class methods
-    public static void greetings(MessageReceivedEvent event, List<String> args) {
-        BotUtils.sendMessage(event.getChannel(),"Greetings are disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
-        /*
-        if(canGreet(event)){
+    static void greetings(MessageReceivedEvent event, List<String> args) {
+        sendMessage(event.getChannel(),"Greetings are disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
+
+        /*if(canGreet(event)){
             if (args.size() == 0 || !commandMap.containsKey(args.get(0).toUpperCase())) {
-                if(args.size()!=0){LoggerService.log(event.getGuild(),"Invalid Argument: "+args.get(0),LoggerService.INFO);}
-                HashMap<String, Set<String>> cmds = new HashMap<>();
+                if(args.size()!=0){
+                    log(event.getGuild(),"Invalid Argument: "+args.get(0), INFO);}
+                HashMap<String,Set<String>> cmds = new HashMap<>();
                 cmds.put("Greetings", commandMap.keySet());
                 boolean enabled = Main.greetings.get(event.getGuild().getLongID()).isGreetable(event.getAuthor().getLongID());
                 EmbedBuilder eb = new EmbedBuilder().withTitle(enabled ? "Greetings are enabled for you" : "Greetings are not enabled for you")
                                                     .withColor(enabled?0:255,enabled?255:0,0);
-                BotUtils.sendMessage(event.getChannel(),eb.build(),120,false);
-                BotUtils.help(event.getAuthor(), event.getChannel(), cmds);
+                sendMessage(event.getChannel(),eb.build(),120,false);
+                help(event.getAuthor(), event.getChannel(), cmds);
             }else {
-                LoggerService.log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), LoggerService.INFO);
+                log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), INFO);
                 commandMap.get(args.get(0).toUpperCase()).runCommand(event, args.subList(1, args.size()));
             }
         }else{
-            BotUtils.sendMessage(event.getChannel(),"Greetings are disabled in this server",120,false);
+            sendMessage(event.getChannel(),"Greetings are disabled in this server",120,false);
         }*/
+
     }
+    @SuppressWarnings("unused")
     private static void list(MessageReceivedEvent event, List<String> strings) {
         Main.greetings.get(event.getGuild().getLongID()).list(event.getChannel());
     }
 
     private static void removeGreeting(MessageReceivedEvent event, List<String> args) {
-        if(BotUtils.hasPermission(event,EnumSet.of(Permissions.MANAGE_SERVER))){
+        if(hasPermission(event,EnumSet.of(Permissions.MANAGE_SERVER))){
             String searchStr = String.join(" ",args);
             Main.greetings.get(event.getGuild().getLongID()).removeGreeting(event,searchStr);
         }
     }
-
-    public static void greetme(MessageReceivedEvent event, List<String> args){
-        Main.greetings.get(event.getGuild().getLongID()).greetme(event);
+    @SuppressWarnings("unused")
+    private static void greetMe(MessageReceivedEvent event, List<String> args){
+        Main.greetings.get(event.getGuild().getLongID()).greetMe(event);
     }
 
-    public static void addGreeting(MessageReceivedEvent event, List<String> args){
-        if(BotUtils.hasPermission(event,EnumSet.of(Permissions.MANAGE_SERVER))){
+    private static void addGreeting(MessageReceivedEvent event, List<String> args){
+        if(hasPermission(event, EnumSet.of(Permissions.MANAGE_SERVER))){
             String searchStr = String.join(" ",args);
             Main.greetings.get(event.getGuild().getLongID()).addGreeting(event,searchStr);
         }
     }
 
-    public static File guildFile(Long id) throws IOException{
-        LoggerService.log(null,"Reading greetings ini for guild: "+id,LoggerService.INFO);
+    private static File guildFile(Long id) throws IOException{
+        log(null,"Reading greetings ini for guild: "+id, INFO);
         File greetDir = new File("greetings");
         if(!greetDir.exists()){
-            LoggerService.log(null,"Folder doesn't exist, creating folder...",LoggerService.INFO);
+            log(null,"Folder doesn't exist, creating folder...", INFO);
             boolean dirMade = greetDir.mkdirs();
             if(!dirMade) {
-                LoggerService.log(null, "Couldn't create folder",LoggerService.ERROR);
+                log(null, "Couldn't create folder", ERROR);
                 throw new IOException("Could't create folder");
             }
-            LoggerService.log(null,"Folder created",LoggerService.SUCC);
+            log(null,"Folder created", SUCC);
         }
         File greetFile = new File("greetings/"+id+".ini");
         if(!greetFile.exists()){
-            LoggerService.log(null,"File doesn't exist, creating file...",LoggerService.INFO);
+            log(null,"File doesn't exist, creating file...", INFO);
             boolean fileMade = greetFile.createNewFile();
             if(!fileMade) {
-                LoggerService.log(null, "Couldn't create file",LoggerService.ERROR);
+                log(null, "Couldn't create file", ERROR);
                 throw new IOException("Could't create folder");
             }
-            LoggerService.log(null,"File created",LoggerService.SUCC);
+            log(null,"File created", SUCC);
         }
         return greetFile;
     }
-    public static boolean canGreet(GuildEvent event){
+
+    private static boolean canGreet(GuildEvent event){
         return Main.serverSettings.get(event.getGuild().getLongID()).allowsGreetings();
     }
+
+/*------------------------------------------------------------------------------*/
+
     // Instance Variables
     private Long id;
     private IGuild guild;
@@ -108,6 +118,7 @@ public class Greetings {
     private ReadWriteLock listLock;
     private Wini iniFile;
     private List<String> greetings;
+
     // Instance methods
     public Greetings(IGuild guild) throws IOException{
         this.id = guild.getLongID();
@@ -129,8 +140,8 @@ public class Greetings {
         }
     }
 
-    public void greetme(MessageReceivedEvent event) {
-        LoggerService.log(event.getGuild(),"Toggling "+event.getAuthor()+"'s status",LoggerService.INFO);
+    private void greetMe(MessageReceivedEvent event) {
+        log(event.getGuild(),"Toggling "+event.getAuthor()+"'s status", INFO);
         String id = Long.toString(event.getAuthor().getLongID());
         boolean status;
         if(iniFile.containsKey(id) && iniFile.get(id).containsKey("enabled")){
@@ -139,7 +150,7 @@ public class Greetings {
             status = false;
         }
         iniFile.put(id,"enabled",!status);
-        BotUtils.sendMessage(event.getChannel(),
+        sendMessage(event.getChannel(),
                 new EmbedBuilder().withTitle(!status?":white_check_mark: Greetings enabled!":":x: Greetings disabled!").build(),
                 -1,true);
         try {
@@ -149,9 +160,10 @@ public class Greetings {
             e.printStackTrace();
         }finally {
             iniLock.writeLock().unlock();
-            LoggerService.log(event.getGuild(),"Toggle unlocked",LoggerService.INFO);
+            log(event.getGuild(),"Toggle unlocked", INFO);
         }
     }
+    @SuppressWarnings("unused")
     public void greet(UserVoiceChannelJoinEvent event) {
         IVoiceChannel vChannel = event.getUser().getVoiceStateForGuild(event.getGuild()).getChannel();
 
@@ -166,7 +178,7 @@ public class Greetings {
             return;
         }
         if(songDir.length==0){
-            LoggerService.log(event.getGuild(),"No greeting by the name: "+searchStr,LoggerService.ERROR);
+            log(event.getGuild(),"No greeting by the name: "+searchStr, ERROR);
             return;
         }
         audioP.clear();
@@ -175,74 +187,77 @@ public class Greetings {
         try {
             audioP.queue(songDir[0]);
         } catch (IOException e) {
-            LoggerService.log(event.getGuild(),"Greet failed: "+e.getMessage(), LoggerService.ERROR);
+            log(event.getGuild(),"Greet failed: "+e.getMessage(), ERROR);
             vChannel.leave();
         } catch (UnsupportedAudioFileException e) {
-            LoggerService.log(event.getGuild(),"Greet failed: "+e.getMessage(), LoggerService.ERROR);
+            log(event.getGuild(),"Greet failed: "+e.getMessage(), ERROR);
             vChannel.leave();
             e.printStackTrace();
         }
     }
-    public boolean isGreetable(Long longID) {
+
+    private boolean isGreetable(Long longID) {
         if(iniFile.containsKey(longID.toString())){
             return iniFile.get(longID.toString()).get("enabled",boolean.class);
         }
         return false;
     }
-    public void addGreeting(MessageReceivedEvent event, String searchStr){
+
+    private void addGreeting(MessageReceivedEvent event, String searchStr){
         if(searchStr.length()==0){
-            BotUtils.sendMessage(event.getChannel(),"I need to know what you want to add. Use `|sfx <list` to know what sounds you can add",120,false);
+            sendMessage(event.getChannel(),"I need to know what you want to add. Use `|sfx <list` to know what sounds you can add",120,false);
             return;
         }
         File[] songDir = SfxModule.songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
-        LoggerService.log(event.getGuild(),"Songs that match: "+ Arrays.toString(songDir),LoggerService.INFO);
+        log(event.getGuild(),"Songs that match: "+ Arrays.toString(songDir), INFO);
         if (songDir == null || songDir.length == 0) {
-            BotUtils.sendMessage(event.getChannel(), "No files in the sfx folder match your query", 120, false);
+            sendMessage(event.getChannel(), "No files in the sfx folder match your query", 120, false);
             return;
         }
         if(songDir.length>1){
-            BotUtils.sendMessage(event.getChannel(),"More than one file matches your query",120,false);
+            sendMessage(event.getChannel(),"More than one file matches your query",120,false);
             return;
         }
         if(this.greetings.stream().filter(s -> s.contains(songDir[0].getName())).count()>0){
-            BotUtils.sendMessage(event.getChannel(),"Greeting already added",120,false);
+            sendMessage(event.getChannel(),"Greeting already added",120,false);
             return;
         }
         greetings.add(songDir[0].getName());
-        LoggerService.log(event.getGuild(),"Updating file",LoggerService.INFO);
+        log(event.getGuild(),"Updating file", INFO);
         updateFile();
-        BotUtils.sendMessage(event.getChannel(),"Greeting added",120,false);
+        sendMessage(event.getChannel(),"Greeting added",120,false);
     }
 
     private void removeGreeting(MessageReceivedEvent event, String searchStr) {
         if(searchStr.length()==0){
-            BotUtils.sendMessage(event.getChannel(),"I need to know what you want to remove. Use `|greet list` to know what sounds you can remove",120,false);
+            sendMessage(event.getChannel(),"I need to know what you want to remove. Use `|greet list` to know what sounds you can remove",120,false);
             return;
         }
         List<String> gList = this.greetings.stream().map(String::toUpperCase).filter(s -> s.contains(searchStr)).collect(Collectors.toList());
         if(gList.size()==0){
-            BotUtils.sendMessage(event.getChannel(),"No Greeting with that name",120,false);
+            sendMessage(event.getChannel(),"No Greeting with that name",120,false);
         }else if(gList.size()>1){
-            BotUtils.sendMessage(event.getChannel(),"More then one greeting matches that name",120,false);
+            sendMessage(event.getChannel(),"More then one greeting matches that name",120,false);
         }else{
             this.greetings = this.greetings.stream().filter(s -> !s.toUpperCase().contains(searchStr)).collect(Collectors.toList());
-            LoggerService.log(event.getGuild(),"List of greetings after removing: "+ this.greetings.toString(),LoggerService.INFO);
+            log(event.getGuild(),"List of greetings after removing: "+ this.greetings.toString(), INFO);
             updateFile();
-            BotUtils.sendMessage(event.getChannel(),"Greeting removed",120,false);
+            sendMessage(event.getChannel(),"Greeting removed",120,false);
         }
     }
-    public void updateFile(){
-        LoggerService.log(guild,"Updating List File",LoggerService.INFO);
+
+    private void updateFile(){
+        log(guild,"Updating List File", INFO);
         try{
             listLock.writeLock().lock();
             BufferedWriter bw = new BufferedWriter(new FileWriter("greetings/"+id.toString()));
             for (String greeting : greetings) {
-                LoggerService.log(guild, "Writing "+greeting+" to file",LoggerService.INFO);
+                log(guild, "Writing "+greeting+" to file", INFO);
                 bw.write(greeting+"\n");
             }
             bw.close();
         }catch (IOException e){
-            LoggerService.log(guild,"Couldn't update file",LoggerService.ERROR);
+            log(guild,"Couldn't update file", ERROR);
         }finally {
             listLock.writeLock().unlock();
         }
@@ -251,6 +266,6 @@ public class Greetings {
     private void list(IChannel channel) {
         StringBuilder s = new StringBuilder();
         greetings.forEach(g -> s.append(WordUtils.capitalizeFully(g)).append("\n"));
-        BotUtils.sendMessage(channel,new EmbedBuilder().withTitle("List of greetings").withDesc(s.toString()).build(),-1,true);
+        sendMessage(channel,new EmbedBuilder().withTitle("List of greetings").withDesc(s.toString()).build(),-1,true);
     }
 }

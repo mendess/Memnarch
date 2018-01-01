@@ -10,20 +10,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
-@SuppressWarnings("WeakerAccess")
+import static com.github.mendess2526.discordbot.LoggerService.*;
+
+
 public class Main {
 
-    @SuppressWarnings("WeakerAccess")
-    public static volatile ScheduledFuture<?> leaveVoice;
-    public static Map<Long,Greetings> greetings;
-    public static Map<Long,ServerSettings> serverSettings;
+    static volatile ScheduledFuture<?> leaveVoice;
+    static Map<Long,Greetings> greetings;
+    static Map<Long,ServerSettings> serverSettings;
 
     public static void main(String[] args){
         Config cfg;
         try{
             cfg = new Config();
         }catch (IOException e){
-            LoggerService.log(null,"Can't find file " + e.getMessage(),LoggerService.ERROR);
+            log(null,"Can't find file " + e.getMessage(), ERROR);
             return;
         }
 
@@ -37,25 +38,28 @@ public class Main {
             client.getDispatcher().registerListener(new Events());
             //TODO make restart more fun
         }else{
-            LoggerService.log(null,"Client is null! Maybe you didn't add the token to settings.ini?",LoggerService.ERROR);
+            log(null,"Client is null! Maybe you didn't add the token to settings.ini?", ERROR);
         }
     }
-    public static void initialiseGreetings(IGuild guild) {
-        LoggerService.log(guild,"Initializing Greetings.",LoggerService.INFO);
+
+    static void initialiseGreetings(IGuild guild) {
+        log(guild,"Initializing Greetings.", INFO);
         try {
             greetings.put(guild.getLongID(), new Greetings(guild));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    public static void initialiseServerSettings(IGuild guild) {
-        LoggerService.log(guild,"Initializing settings.",LoggerService.INFO);
+
+    static void initialiseServerSettings(IGuild guild) {
+        log(guild,"Initializing settings.", INFO);
         try {
             serverSettings.put(guild.getLongID(), new ServerSettings(guild));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
     private static IDiscordClient createClient(String token){
         ClientBuilder cBuilder = new ClientBuilder().withToken(token).withRecommendedShardCount();
         try{

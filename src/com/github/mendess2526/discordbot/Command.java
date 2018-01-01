@@ -4,6 +4,6 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedE
 
 import java.util.List;
 
-public interface Command {
+interface Command {
     void runCommand(MessageReceivedEvent event, List<String> args);
 }

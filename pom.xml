@@ -6,7 +6,7 @@
 
     <groupId>com.github.mendess2526.discordbot</groupId>
     <artifactId>Memnarch</artifactId>
-    <version>3.3.6</version>
+    <version>3.4.0</version>
 
     <repositories>
 
@@ -40,6 +40,12 @@
             <groupId>org.ini4j</groupId>
             <artifactId>ini4j</artifactId>
             <version>0.5.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.json</groupId>
+            <artifactId>javax.json-api</artifactId>
+            <version>1.0</version>
         </dependency>
 
     </dependencies>

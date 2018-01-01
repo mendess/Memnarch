@@ -10,26 +10,27 @@ import java.io.InputStreamReader;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-@SuppressWarnings("WeakerAccess")
-public class Config {
-    private String token;
-    private ReadWriteLock lock;
+import static com.github.mendess2526.discordbot.LoggerService.*;
 
-    public Config() throws IOException {
-        lock = new ReentrantReadWriteLock();
+class Config {
+    private String token;
+    @SuppressWarnings("FieldCanBeLocal")
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    Config() throws IOException {
         File file = new File("./settings.ini");
         if(!file.exists()){
             if(!file.createNewFile()){
                 return;
             }
         }
-        LoggerService.log(null,"Reading from Ini",LoggerService.INFO);
+        log(null,"Reading from Ini", INFO);
         Wini iniFile;
         lock.readLock().lock();
         iniFile = new Wini(file);
         lock.readLock().unlock();
         if(!iniFile.containsKey("connection")){
-            LoggerService.log(null,"No token set",LoggerService.ERROR);
+            log(null,"No token set", ERROR);
             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
             System.out.println("Enter token:");
             this.token = br.readLine();
@@ -43,11 +44,10 @@ public class Config {
             }
         }
         this.token = iniFile.get("connection","token",String.class);
-        LoggerService.log(null,"ini read!",LoggerService.SUCC);
+        log(null,"ini read!", SUCC);
     }
 
-    public String getToken() {
+    String getToken() {
         return this.token;
     }
-
 }

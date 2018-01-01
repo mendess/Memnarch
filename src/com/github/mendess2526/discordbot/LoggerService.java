@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 
@@ -19,18 +20,19 @@ public class LoggerService {
     static final int UERROR = 4;
 
     public static void log(IGuild guild, String message, int type){
+        //noinspection SpellCheckingInspection
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         switch (type) {
-            case LoggerService.INFO:
+            case INFO:
                 message = " INFO - " + message;
                 break;
-            case LoggerService.ERROR:
+            case ERROR:
                 message = " ERROR - " + message;
                 break;
-            case LoggerService.SUCC:
+            case SUCC:
                 message = " SUCC - " + message;
                 break;
-            case LoggerService.UERROR:
+            case UERROR:
                 message = " USER_E - " + message;
                 break;
             default:
@@ -42,15 +44,22 @@ public class LoggerService {
         logToConsole(message,type);
         logToFile(message);
     }
+
+    public static void log(IGuild guild, Exception e, String method){
+        log(guild,e.getClass().getCanonicalName()+" in "+method+": "+e.getMessage(), ERROR);
+        logToFile(Arrays.toString(e.getStackTrace()));
+    }
+
     private static void logToFile(String message){
         try {
             Writer writer = new BufferedWriter(new FileWriter("log.txt", true));
             writer.write( message + System.lineSeparator());
             writer.close();
         } catch (IOException e) {
-            LoggerService.logToConsole(e.getMessage(),LoggerService.ERROR);
+            logToConsole(e.getMessage(), ERROR);
         }
     }
+
     private static void logToConsole(String message, int type) {
         final String ANSI_RESET = " \u001B[0m ";
         final String ANSI_RED = " \u001B[31m ";
@@ -59,16 +68,16 @@ public class LoggerService {
         final String ANSI_LRED = " \u001B[91;1m";
 
         switch (type) {
-            case LoggerService.INFO:
+            case INFO:
                 message = ANSI_CYAN + message + ANSI_RESET;
                 break;
-            case LoggerService.ERROR:
+            case ERROR:
                 message = ANSI_RED  + message + ANSI_RESET;
                 break;
-            case LoggerService.SUCC:
+            case SUCC:
                 message = ANSI_GREEN + message + ANSI_RESET;
                 break;
-            case LoggerService.UERROR:
+            case UERROR:
                 message = ANSI_LRED + message + ANSI_RESET;
                 break;
             default:
