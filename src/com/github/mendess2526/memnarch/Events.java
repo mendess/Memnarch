@@ -1,5 +1,15 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch;
 
+import com.github.mendess2526.memnarch.misc.CMiscCommands;
+import com.github.mendess2526.memnarch.misc.MiscCommands;
+import com.github.mendess2526.memnarch.misc.MiscTasks;
+import com.github.mendess2526.memnarch.rolechannels.CRoleChannels;
+import com.github.mendess2526.memnarch.rolechannels.RoleChannels;
+import com.github.mendess2526.memnarch.serversettings.CServerSettings;
+import com.github.mendess2526.memnarch.serversettings.ServerSettings;
+import com.github.mendess2526.memnarch.sfx.CSfx;
+import com.github.mendess2526.memnarch.sfx.Greetings;
+import com.github.mendess2526.memnarch.sfx.SfxModule;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -16,52 +26,102 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import static com.github.mendess2526.discordbot.LoggerService.*;
+import static com.github.mendess2526.memnarch.LoggerService.*;
 
 public class Events {
 
-    final static String BOT_PREFIX = "|";
+    public final static String BOT_PREFIX = "|";
     private static final String CHECK_MARK = "\u2705";
     private static final String RED_X = "\u274C";
 
-    private static final Map<String, Command> miscMap = new HashMap<>();
-    private static final Map<String, Command> sfxMap = new HashMap<>();
-    private static final Map<String, Command> roleChannelsMap = new HashMap<>();
-    private static final Map<String, Command> greetingsMap = new HashMap<>();
-    private static final Map<String, Command> serverSettingsMap = new HashMap<>();
-
-    static final Map<String, Map<String, Command>> commandMap = new HashMap<>();
+    public static final Map<String, Command> commandMap = new HashMap<>();
 
     static {
-        miscMap.put("HELP", MiscCommands::help);
-        miscMap.put("PING", MiscCommands::ping);
-        miscMap.put("HI", MiscCommands::hi);
-        //noinspection SpellCheckingInspection
-        miscMap.put("WHOAREYOU",MiscCommands::whoAreYou);
-        miscMap.put("SHUTDOWN",MiscCommands::shutdown);
-        //noinspection SpellCheckingInspection
-        miscMap.put("RRANK",MiscTasks::rRank);
-        //noinspection SpellCheckingInspection
-        roleChannelsMap.put("ROLECHANNEL", (RoleChannels::handle));
-        roleChannelsMap.put("JOIN", RoleChannels::startJoinUI);
-        roleChannelsMap.put("LEAVE", RoleChannels::startLeaveUI);
+        commandMap.put("HELP",        new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscCommands.help(event);
+            }
+        });
+        commandMap.put("PING",        new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscCommands.ping(event);
+            }
+        });
+        commandMap.put("HI",          new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscCommands.hi(event);
+            }
+        });
+        commandMap.put("WHOAREYOU",   new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscCommands.whoAreYou(event);
+            }
+        });
+        commandMap.put("SHUTDOWN",    new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscCommands.shutdown(event);
+            }
+        });
+        commandMap.put("RRANK",       new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscTasks.rRank(event);
+            }
+        });
 
-        sfxMap.put("SFX", SfxModule::sfx);
-        //noinspection SpellCheckingInspection
-        sfxMap.put("SFXLIST", SfxModule::sfxList);
 
-        greetingsMap.put("GREET",Greetings::greetings);
-        //noinspection SpellCheckingInspection
-        serverSettingsMap.put("SERVERSET",ServerSettings::serverSettings);
+        commandMap.put("ROLECHANNEL", new CRoleChannels() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                RoleChannels.handle(event,args);
+            }
+        });
+        commandMap.put("JOIN",        new CRoleChannels() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                RoleChannels.startJoinUI(event);
+            }
+        });
+        commandMap.put("LEAVE",       new CRoleChannels() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                RoleChannels.startLeaveUI(event);
+            }
+        });
 
-        commandMap.put("Miscellaneous",miscMap);
-        commandMap.put("Sfx",sfxMap);
-        commandMap.put("RoleChannels", roleChannelsMap);
-        commandMap.put("Greetings",greetingsMap);
-        commandMap.put("Server Settings",serverSettingsMap);
 
+        commandMap.put("SFX",         new CSfx() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                SfxModule.sfx(event);
+            }
+        });
+        commandMap.put("SFXLIST",     new CSfx() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                SfxModule.list(event);
+            }
+        });
+        commandMap.put("GREET",       new CSfx() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                Greetings.greetings(event);
+            }
+        });
+
+
+        commandMap.put("SERVERSET",   new CServerSettings() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                ServerSettings.serverSettings(event,args);
+            }
+        });
     }
 
     @EventSubscriber
@@ -113,6 +173,7 @@ public class Events {
         }
         if(!event.getReaction().getUserReacted(event.getClient().getOurUser())){
             if(event.getReaction().getEmoji().getName().equals(BotUtils.R)){
+                log(event.getGuild(),"Found an R",INFO);
                 MiscTasks.handleR(event);
             }
         }
@@ -133,15 +194,15 @@ public class Events {
             if(event.getUser().isBot()){
                 return;
             }
-            if(Main.greetings.get(event.getGuild().getLongID()).isGreetable(event.getUser().getLongID())){
-                Main.greetings.get(event.getGuild().getLongID()).greet(event);
+            if(Main.sfx.get(event.getGuild().getLongID()).isGreetable(event.getUser().getLongID())){
+                Main.sfx.get(event.getGuild().getLongID()).greet(event);
                 return;
             }
             Random rand = new Random();
             int randomNum = rand.nextInt(128);
             if(randomNum<2){
                 LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.SUCC);
-                Main.greetings.get(event.getGuild().getLongID()).greet(event);
+                Main.sfx.get(event.getGuild().getLongID()).greet(event);
             }else{
                 LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.INFO);
             }
@@ -174,6 +235,7 @@ public class Events {
     @EventSubscriber
     public void messageReceived(MessageReceivedEvent event) {
         if(event.getMessage().getContent().contains(BotUtils.R)){
+            log(event.getGuild(),"Found an R",INFO);
             MiscTasks.handleR(event);
         }
 
@@ -197,21 +259,12 @@ public class Events {
         String cmd = command[0].substring(1).toUpperCase();
 
         List<String> args = new ArrayList<>(Arrays.asList(command));
-        log(event.getGuild(),"Command: "+ args, INFO);
+        log(event.getGuild(),"Command: "+ cmd, INFO);
         args.remove(0);
-        String[] commandGroup = commandMap.keySet()
-                                 .stream()
-                                 .filter(k -> commandMap.get(k).containsKey(cmd))
-                                 .collect(Collectors.toSet())
-                                 .toArray(new String[0]);
-        if(commandGroup.length>1){
-            BotUtils.contactOwner(event,"More then one command with the same name: "+event.getMessage().getContent());
-            log(event.getGuild(),"There is more than one command group with the same command, contacting owner", ERROR);
-            return;
-        }
-        if(commandGroup.length==1 && commandMap.containsKey(commandGroup[0]) && commandMap.get(commandGroup[0]).containsKey(cmd)){
+
+        if(commandMap.containsKey(cmd)){
             log(event.getGuild(),"Valid command: "+cmd, SUCC);
-            commandMap.get(commandGroup[0]).get(cmd).runCommand(event,args);
+            commandMap.get(cmd).runCommand(event,args);
         }else{
             log(event.getGuild(),"Invalid command: "+cmd, UERROR);
         }

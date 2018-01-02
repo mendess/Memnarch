@@ -1,5 +1,6 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch.misc;
 
+import com.github.mendess2526.memnarch.BotUtils;
 import org.ini4j.Wini;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
@@ -9,20 +10,18 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.github.mendess2526.discordbot.BotUtils.sendMessage;
-import static com.github.mendess2526.discordbot.LoggerService.log;
+import static com.github.mendess2526.memnarch.LoggerService.log;
 
-class MiscTasks {
+public class MiscTasks {
     @SuppressWarnings("SpellCheckingInspection")
     private static final String aRcountingFile = BotUtils.DEFAULT_FILE_PATH+"aRcounting.ini";
     private static Wini iniFile;
     private static final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    static void rRank(MessageReceivedEvent event, List<String> strings){
+    public static void rRank(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
         lock.readLock().lock();
         Wini iniFile;
@@ -58,10 +57,10 @@ class MiscTasks {
         }else{
             eb.withTitle("Not ranked...");
         }
-        sendMessage(event.getChannel(), eb.build(), 30, true);
+        BotUtils.sendMessage(event.getChannel(), eb.build(), 30, true);
     }
 
-    static void handleR(ReactionAddEvent event){
+    public static void handleR(ReactionAddEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
         lock.writeLock().lock();
         try{
@@ -78,7 +77,7 @@ class MiscTasks {
         }
     }
 
-    static void handleR(MessageReceivedEvent event){
+    public static void handleR(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
         lock.writeLock().lock();
         try{

@@ -1,4 +1,4 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch;
 
 
 import org.ini4j.Wini;
@@ -10,7 +10,7 @@ import java.io.InputStreamReader;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.github.mendess2526.discordbot.LoggerService.*;
+import static com.github.mendess2526.memnarch.LoggerService.*;
 
 class Config {
     private String token;

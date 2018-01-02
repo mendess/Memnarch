@@ -1,5 +1,7 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch;
 
+import com.github.mendess2526.memnarch.sfx.Greetings;
+import com.github.mendess2526.memnarch.serversettings.ServerSettings;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.handle.obj.IGuild;
@@ -10,14 +12,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
-import static com.github.mendess2526.discordbot.LoggerService.*;
+import static com.github.mendess2526.memnarch.LoggerService.*;
 
 
 public class Main {
 
     static volatile ScheduledFuture<?> leaveVoice;
-    static Map<Long,Greetings> greetings;
-    static Map<Long,ServerSettings> serverSettings;
+    public static Map<Long,Greetings> greetings;
+    public static Map<Long,ServerSettings> serverSettings;
 
     public static void main(String[] args){
         Config cfg;

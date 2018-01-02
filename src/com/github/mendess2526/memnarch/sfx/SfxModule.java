@@ -1,5 +1,7 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch.sfx;
 
+import com.github.mendess2526.memnarch.Command;
+import com.github.mendess2526.memnarch.Events;
 import org.apache.commons.lang3.text.WordUtils;
 import sx.blah.discord.api.events.Event;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -10,27 +12,60 @@ import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.audio.AudioPlayer;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.*;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.github.mendess2526.discordbot.BotUtils.*;
-import static com.github.mendess2526.discordbot.LoggerService.*;
+import static com.github.mendess2526.memnarch.BotUtils.*;
+import static com.github.mendess2526.memnarch.LoggerService.*;
 
 
 @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "unused"})
-class SfxModule {
+public class SfxModule {
+    static abstract class CSFXModule implements Command{
+        //TODO implement
+        @Override
+        public String getCommandGroup(){
+            return "Sfx";
+        }
 
+        @Override
+        public Set<Permissions> getPermissions(){
+            return null;
+        }
+    }
     private static Map<String,Command> commandMap = new HashMap<>();
 
     static {
-        commandMap.put("<LIST", SfxModule::sfxList);
-        commandMap.put("<ADD", SfxModule::sfxAdd);
-        commandMap.put("<DELETE", SfxModule::sfxDelete);
-        commandMap.put("<RETRIEVE", SfxModule::sfxRetrieve);
+        commandMap.put("<LIST",     new CSFXModule(){
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                list(event);
+            }
+        });
+        commandMap.put("<ADD",      new CSFXModule() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                add(event);
+            }
+        });
+        commandMap.put("<DELETE",   new CSFXModule() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                delete(event,args);
+            }
+        });
+        commandMap.put("<RETRIEVE", new CSFXModule() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                retrieve(event,args);
+            }
+        });
     }
 
-    static void sfx(MessageReceivedEvent event, List<String> args){
+    public static void sfx(MessageReceivedEvent event){
         sendMessage(event.getChannel(),"Sfx is disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
 /*
         if (args.size() == 0) {
@@ -46,11 +81,11 @@ class SfxModule {
             log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), INFO);
             commandMap.get(args.get(0).toUpperCase()).runCommand(event,args.subList(1,args.size()));
         }else{
-            sfxPlay(event,args);
+            play(event,args);
         }*/
     }
 
-    private static void sfxPlay(MessageReceivedEvent event, List<String> args) {
+    private static void play(MessageReceivedEvent event, List<String> args) {
         IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
         if (vChannel == null) {
             sendMessage(event.getChannel(), "Please join a voice channel before using this command!", 120, false);
@@ -72,13 +107,13 @@ class SfxModule {
         try {
             audioP.queue(songDir[0]);
         } catch (IOException | UnsupportedAudioFileException e) {
-            log(event.getGuild(),e,"SfxModule.sfxPlay");
+            log(event.getGuild(),e,"SfxModule.play");
             sendMessage(event.getChannel(), "There was a problem playing that sound.", 120, false);
             vChannel.leave();
         }
     }
-    @SuppressWarnings("unused")
-    static void sfxList(MessageReceivedEvent event, List<String> args) {
+
+    public static void list(MessageReceivedEvent event) {
         File[] songDir = songsDir(event,File::isFile);
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of sfx files:");
@@ -104,11 +139,11 @@ class SfxModule {
                 count=0;column++;
             }
         }
-        eb.withFooterText("Use "+Events.BOT_PREFIX+"sfx <name> to play one");
+        eb.withFooterText("Use "+ Events.BOT_PREFIX+"sfx <name> to play one");
         sendMessage(event.getChannel(),event.getAuthor().mention(),eb.build(),-1,true);
     }
-    @SuppressWarnings("unused")
-    private static void sfxAdd(MessageReceivedEvent event, List<String> args) {
+
+    private static void add(MessageReceivedEvent event) {
         if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)
             && !event.getAuthor().equals(event.getClient().getApplicationOwner())){
             sendMessage(event.getChannel(),"You don't have permission to use that command",120,false);
@@ -123,7 +158,7 @@ class SfxModule {
         downloadFile(event,attach,"sfx");
     }
 
-    private static void sfxDelete(MessageReceivedEvent event, List<String> args) {
+    private static void delete(MessageReceivedEvent event, List<String> args) {
         if(!event.getAuthor().equals(event.getClient().getApplicationOwner())){
             sendMessage(event.getChannel(),"Only the owner of the bot can use that command",120,false);
             return;
@@ -150,7 +185,7 @@ class SfxModule {
         }
     }
 
-    private static void sfxRetrieve(MessageReceivedEvent event, List<String> args){
+    private static void retrieve(MessageReceivedEvent event, List<String> args){
         args.remove(0);
         String searchStr = String.join(" ", args);
         File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));

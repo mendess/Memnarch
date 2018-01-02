@@ -1,5 +1,6 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch.rolechannels;
 
+import com.github.mendess2526.memnarch.Command;
 import com.vdurmont.emoji.EmojiParser;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.ChannelDeleteEvent;
@@ -19,11 +20,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.github.mendess2526.discordbot.BotUtils.*;
-import static com.github.mendess2526.discordbot.LoggerService.*;
+import static com.github.mendess2526.memnarch.BotUtils.*;
+import static com.github.mendess2526.memnarch.LoggerService.*;
 
 public class RoleChannels {
 
+    static abstract class CRoleChannelsSub implements Command{
+        //TODO implement
+        @Override
+        public String getCommandGroup(){
+            return "Role Channels";
+        }
+
+        @Override
+        public Set<Permissions> getPermissions(){
+            return null;
+        }
+    }
     private static final int JOIN = 0;
     private static final int LEAVE = 1;
     // UNICODE
@@ -32,12 +45,12 @@ public class RoleChannels {
     private static final String ONE = "1⃣", TWO = "2⃣", THREE = "3⃣", FOUR = "4⃣", FIVE = "5⃣", SIX = "6⃣";
     private static final String[] NUMBERS = {ONE,TWO,THREE,FOUR,FIVE,SIX};
 
-    static final String TITLE_INIT_QUERY_J = "Do you want to join a category or individual channels?";
-    static final String TITLE_INIT_QUERY_L = "Do you want to leave a category or individual channels?";
-    static final String TITLE_CH_QUERY_J = "Select the channel you want to join!";
-    static final String TITLE_CH_QUERY_L = "Select the channel you want to leave!";
-    static final String TITLE_CT_QUERY_J = "Select the category you want to join!";
-    static final String TITLE_CT_QUERY_L = "Select the category you want to leave!";
+    public static final String TITLE_INIT_QUERY_J = "Do you want to join a category or individual channels?";
+    public static final String TITLE_INIT_QUERY_L = "Do you want to leave a category or individual channels?";
+    public static final String TITLE_CH_QUERY_J = "Select the channel you want to join!";
+    public static final String TITLE_CH_QUERY_L = "Select the channel you want to leave!";
+    public static final String TITLE_CT_QUERY_J = "Select the category you want to join!";
+    public static final String TITLE_CT_QUERY_L = "Select the category you want to leave!";
     private static final String[] TITLE_EMPTY_CHLIST = {"No more channels to join. You're EVERYWHERE!", "No more channels to leave."};
     private static final String[] TITLE_INIT_QUERY = {TITLE_INIT_QUERY_J,TITLE_INIT_QUERY_L};
     private static final String[] TITLE_CH_QUERY = {TITLE_CH_QUERY_J,TITLE_CH_QUERY_L};
@@ -50,17 +63,47 @@ public class RoleChannels {
 
     static {
         // Creates a new text channel of the given name
-        commandMap.put("NEW", RoleChannels::newChannel);
+        commandMap.put("NEW",     new CRoleChannelsSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                newChannel(event,args);
+            }
+        });
         // Deletes the text channel of the given name
-        commandMap.put("DELETE", RoleChannels::deleteChannel);
+        commandMap.put("DELETE",  new CRoleChannelsSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                deleteChannel(event,args);
+            }
+        });
         // Sets all text channels as private
-        commandMap.put("SETALL", RoleChannels::setAll);
+        commandMap.put("SETALL",  new CRoleChannelsSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                setAll(event);
+            }
+        });
         // Sets the given channel as private
-        commandMap.put("SET", RoleChannels::set);
+        commandMap.put("SET",     new CRoleChannelsSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                set(event,args);
+            }
+        });
         // Sets the given channel as public
-        commandMap.put("UNSET", RoleChannels::unSet);
+        commandMap.put("UNSET",   new CRoleChannelsSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                unSet(event,args);
+            }
+        });
         // Converts the private channel markers for all private channels
-        commandMap.put("CONVERT", RoleChannels::convert);
+        commandMap.put("CONVERT", new CRoleChannelsSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                convert(event,args);
+            }
+        });
     }
 
     
@@ -185,8 +228,7 @@ public class RoleChannels {
         }
     }
 
-    @SuppressWarnings("unused")
-    private static void setAll(MessageReceivedEvent event, List<String> args) {
+    private static void setAll(MessageReceivedEvent event) {
         List<IChannel> chList = event.getGuild().getChannels();
         EnumSet<Permissions> readMessages = EnumSet.of(Permissions.READ_MESSAGES);
         EnumSet<Permissions> noPermits = EnumSet.noneOf(Permissions.class);
@@ -283,8 +325,7 @@ public class RoleChannels {
     }
 
     // Join
-    @SuppressWarnings("unused")
-    static void startJoinUI(MessageReceivedEvent event, List<String> args) {
+    public static void startJoinUI(MessageReceivedEvent event) {
         if(hasChannelsInCategories(event.getGuild(), event.getAuthor(), true)){
             createInitialQuery(event,true);
         }else{
@@ -310,8 +351,7 @@ public class RoleChannels {
     }
 
     // Leave
-    @SuppressWarnings("unused")
-    static void startLeaveUI(MessageReceivedEvent event, List<String> args) {
+    public static void startLeaveUI(MessageReceivedEvent event) {
         if(hasChannelsInCategories(event.getGuild(),event.getAuthor(),false)){
             createInitialQuery(event,false);
         }else{
@@ -337,7 +377,7 @@ public class RoleChannels {
     }
 
     // Initial Query
-    static void processInitialQuery(ReactionAddEvent event, IUser user, boolean joining){
+    public static void processInitialQuery(ReactionAddEvent event, IUser user, boolean joining){
         RequestBuffer.request(() -> event.getMessage().removeAllReactions());
         switch (event.getReaction().getEmoji().getName()){
             case ONE:
@@ -377,7 +417,7 @@ public class RoleChannels {
     }
 
     // Channel List
-    static int processChannelQuery(ReactionAddEvent event, boolean joining){
+    public static int processChannelQuery(ReactionAddEvent event, boolean joining){
         int size=0;
         // If it was the mentioned user that reacted to a reaction added by the bot
         if(event.getMessage().getMentions().get(0).equals(event.getUser())){
@@ -495,7 +535,7 @@ public class RoleChannels {
     }
 
     // Category List
-    static int processCategoryQuery(ReactionAddEvent event, boolean joining){
+    public static int processCategoryQuery(ReactionAddEvent event, boolean joining){
         int size = 0;
         // If it was the mentioned user that reacted to a reaction added by the bot
         if(event.getMessage().getMentions().get(0).equals(event.getUser())){
@@ -651,7 +691,7 @@ public class RoleChannels {
         return (c -> (c.getTopic() != null && c.getTopic().startsWith(PRIVATE_MARKER) && joinable != c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)));
     }
     //TODO For some reason getReactions is not getting an updated reaction
-    static void cutSuperfluousReactions(IMessage message, int size) {
+    public static void cutSuperfluousReactions(IMessage message, int size) {
         List<String> rList = message.getReactions().stream().map(r -> r.getEmoji().getName()).collect(Collectors.toList());
         log(message.getGuild(),"Reaction List: "+rList.toString(), INFO);
         if(rList.contains(ARROW_BACK)){remReactFromMsg(message,ARROW_BACK);}

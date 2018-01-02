@@ -1,4 +1,4 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch;
 
 import org.apache.commons.lang3.text.WordUtils;
 import sx.blah.discord.api.IDiscordClient;
@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import static com.github.mendess2526.discordbot.LoggerService.*;
+import static com.github.mendess2526.memnarch.LoggerService.*;
 
 @SuppressWarnings("UnusedReturnValue")
 public class BotUtils {
@@ -34,7 +34,7 @@ public class BotUtils {
     private static final String ERROR_SMTH_WRONG = "Something went wrong, contact the owner of the bot";
     static final String X = "\u2716";//"\u274C";
     static final String R = "\uD83C\uDDF7";
-    static final String DEFAULT_FILE_PATH = "./files/";
+    public static final String DEFAULT_FILE_PATH = "./files/";
 
     private static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
         Thread t = new Thread(() -> {
@@ -49,7 +49,7 @@ public class BotUtils {
         t.start();
     }
 
-    static void contactOwner(Event event, String msg){
+    public static void contactOwner(Event event, String msg){
         if(event instanceof MessageReceivedEvent){
             MessageReceivedEvent e = (MessageReceivedEvent) event;
             String guild = e.getGuild().getName();
@@ -62,21 +62,21 @@ public class BotUtils {
         }
     }
     @SuppressWarnings("SameParameterValue")
-    static IMessage sendMessage(IChannel channel, String message, int autoDeleteDelay, boolean reactCross){
+    public static IMessage sendMessage(IChannel channel, String message, int autoDeleteDelay, boolean reactCross){
         IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(message);}).get();
         if(reactCross){closeButton(msg);}
         if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
         return msg;
     }
     @SuppressWarnings("SameParameterValue")
-    static IMessage sendMessage(IChannel channel, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
+    public static IMessage sendMessage(IChannel channel, EmbedObject eb, int autoDeleteDelay, boolean reactCross){
         IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(eb);}).get();
         if(reactCross){closeButton(msg);}
         if(autoDeleteDelay != -1){autoDelete(msg,channel.getClient(),autoDeleteDelay);}
         return msg;
     }
 
-    static IMessage sendMessage(IChannel channel, String message, EmbedObject eb, int autoDeleteDelay,
+    public static IMessage sendMessage(IChannel channel, String message, EmbedObject eb, int autoDeleteDelay,
                                 boolean reactCross){
         IMessage msg = RequestBuffer.request(() -> {return channel.sendMessage(message,eb);}).get();
         if(reactCross){closeButton(msg);}
@@ -84,7 +84,7 @@ public class BotUtils {
         return msg;
     }
 
-    static void sendFile(IChannel ch, File file) {
+    public static void sendFile(IChannel ch, File file) {
         RequestBuffer.request(() -> {
             try {
                 ch.sendFile(file);
@@ -95,7 +95,7 @@ public class BotUtils {
         }).get();
     }
 
-    static void closeButton(IMessage msg){
+    public static void closeButton(IMessage msg){
         RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(X))).get();
     }
     @SuppressWarnings("unused")
@@ -110,7 +110,7 @@ public class BotUtils {
         }
     }
 
-    static void help(IUser user, IChannel channel, Map<String,Set<String>> commands) {
+    public static void help(IUser user, IChannel channel, Map<String,Set<String>> commands) {
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of available commands for:");
         commands.keySet().forEach(k -> {
@@ -122,7 +122,7 @@ public class BotUtils {
         sendMessage(channel,user.mention(),eb.build(),-1,true);
     }
 
-    static boolean hasPermission(MessageReceivedEvent event, Set<Permissions> permissions){
+    public static boolean hasPermission(MessageReceivedEvent event, Set<Permissions> permissions){
         if(!event.getAuthor().equals(event.getClient().getApplicationOwner())
             && !event.getAuthor().getPermissionsForGuild(event.getGuild()).containsAll(permissions)){
             sendMessage(event.getChannel(), "You don't have permission to use that command", 120, false);
@@ -132,7 +132,7 @@ public class BotUtils {
         }
     }
     @SuppressWarnings("SameParameterValue")
-    static void downloadFile(MessageReceivedEvent event, IMessage.Attachment attach, String folderName){
+    public static void downloadFile(MessageReceivedEvent event, IMessage.Attachment attach, String folderName){
         String[] name = attach.getFilename().split(Pattern.quote("."));
         String filename = attach.getFilename().replaceAll(Pattern.quote("_")," ");
         if(!name[name.length-1].equals("mp3")){
@@ -179,7 +179,7 @@ public class BotUtils {
         }
     }
 
-    static boolean mkFolder(Event event, String folderName){
+    public static boolean mkFolder(Event event, String folderName){
         boolean success = !new File(folderName).mkdirs();
         if (!success) {
             IGuild guild = null;

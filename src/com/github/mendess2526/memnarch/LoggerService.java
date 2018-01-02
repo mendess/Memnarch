@@ -1,4 +1,4 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch;
 
 
 import sx.blah.discord.handle.obj.IGuild;
@@ -14,10 +14,10 @@ import java.util.Date;
 
 @SuppressWarnings("WeakerAccess")
 public class LoggerService {
-    static final int INFO = 1;
-    static final int ERROR = 2;
-    static final int SUCC = 3;
-    static final int UERROR = 4;
+    public static final int INFO = 1;
+    public static final int ERROR = 2;
+    public static final int SUCC = 3;
+    public static final int UERROR = 4;
 
     public static void log(IGuild guild, String message, int type){
         //noinspection SpellCheckingInspection

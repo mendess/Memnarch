@@ -1,5 +1,7 @@
-package com.github.mendess2526.discordbot;
+package com.github.mendess2526.memnarch.serversettings;
 
+import com.github.mendess2526.memnarch.Command;
+import com.github.mendess2526.memnarch.Main;
 import org.ini4j.Wini;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IGuild;
@@ -12,24 +14,55 @@ import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.github.mendess2526.discordbot.BotUtils.*;
-import static com.github.mendess2526.discordbot.LoggerService.*;
+import static com.github.mendess2526.memnarch.BotUtils.*;
+import static com.github.mendess2526.memnarch.LoggerService.*;
 
 
-class ServerSettings {
+public class ServerSettings {
+    static abstract class CServerSettingSub implements Command{
+        //TODO implement
+        @Override
+        public String getCommandGroup(){
+            return "Server Settings";
+        }
 
+        @Override
+        public Set<Permissions> getPermissions(){
+            return null;
+        }
+    }
     // Class Variables
     //private static Permissions permissions = Permissions.MANAGE_SERVER;
     private static final Map<String,Command> commandMap = new HashMap<>();
     static {
-        commandMap.put("WELCOMEMSG",ServerSettings::setMessagesNewUsers);
-        commandMap.put("SETWELCOMEMSG",ServerSettings::setNewUserMessage);
-        commandMap.put("GREETINGS",ServerSettings::setAllowsGreetings);
-        commandMap.put("STATUS",ServerSettings::showServerSettings);
+        commandMap.put("WELCOMEMSG",    new CServerSettingSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                setMessagesNewUsers(event);
+            }
+        });
+        commandMap.put("SETWELCOMEMSG", new CServerSettingSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                setWelcomeMessage(event,args);
+            }
+        });
+        commandMap.put("GREETINGS",     new CServerSettingSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                setAllowsGreetings(event);
+            }
+        });
+        commandMap.put("STATUS",        new CServerSettingSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                showServerSettings(event);
+            }
+        });
     }
 
     // Class Methods
-    static void serverSettings(MessageReceivedEvent event, List<String> args) {
+    public static void serverSettings(MessageReceivedEvent event, List<String> args) {
         log(event.getGuild(), "Server settings args: " + args.toString(), INFO);
         if (hasPermission(event, EnumSet.of(Permissions.MANAGE_SERVER))) {
             if (args.size() == 0 || !commandMap.containsKey(args.get(0).toUpperCase())) {
@@ -42,34 +75,34 @@ class ServerSettings {
             }
         }
     }
-    @SuppressWarnings("unused")
-    private static void setMessagesNewUsers(MessageReceivedEvent event, List<String> args){
-        Main.serverSettings.get(event.getGuild().getLongID()).setMessagesNewUsers(event);
+
+    private static void setMessagesNewUsers(MessageReceivedEvent event){
+        Main.serverSettings.get(event.getGuild().getLongID()).iSetMessagesNewUsers(event);
     }
 
-    private static void setNewUserMessage(MessageReceivedEvent event, List<String> args){
+    private static void setWelcomeMessage(MessageReceivedEvent event, List<String> args){
         List<String> msg = Arrays.asList(event.getMessage().getContent().split("\\s")).subList(2,args.size()+2);
         Main.serverSettings.get(event.getGuild().getLongID())
-                .setNewUserMessage(String.join(" ",msg));
+                .iSetWelcomeMessage(String.join(" ",msg));
         sendMessage(event.getChannel(),"Message set!",120,false);
     }
-    @SuppressWarnings("unused")
-    private static void setAllowsGreetings(MessageReceivedEvent event, List<String> args){
-        Main.serverSettings.get(event.getGuild().getLongID()).setAllowsGreetings(event);
-    }
-    @SuppressWarnings("unused")
-    private static void showServerSettings(MessageReceivedEvent event, List<String> args){
-        Main.serverSettings.get(event.getGuild().getLongID()).showServerSettings(event);
+
+    private static void setAllowsGreetings(MessageReceivedEvent event){
+        Main.serverSettings.get(event.getGuild().getLongID()).iSetAllowsGreetings(event);
     }
 
-    /**----------------------------------------------------------------------------------------------*/
+    private static void showServerSettings(MessageReceivedEvent event){
+        Main.serverSettings.get(event.getGuild().getLongID()).iShowServerSettings(event);
+    }
+
+    /*----------------------------------------------------------------------------------------------*/
     // Instance Variables
     private String id;
     private IGuild guild;
     private ReadWriteLock lock;
     private Wini iniFile;
 
-    ServerSettings(IGuild guild) throws IOException {
+    public ServerSettings(IGuild guild) throws IOException {
         this.id=Long.toString(guild.getLongID());
         this.guild=guild;
         this.lock = new ReentrantReadWriteLock();
@@ -88,19 +121,19 @@ class ServerSettings {
     }
 
     // Instance Methods
-    boolean messagesNewUsers() {
+    public boolean messagesNewUsers() {
         return iniFile.get(this.id,"Messages new users",boolean.class);
     }
 
-    boolean allowsGreetings() {
+    public boolean allowsGreetings() {
         return iniFile.get(this.id,"Allows Greetings",boolean.class);
     }
 
-    String getNewUserMessage() {
+    public String getNewUserMessage() {
         return iniFile.get(this.id,"New User Message",String.class);
     }
 
-    private void setAllowsGreetings(MessageReceivedEvent event) {
+    private void iSetAllowsGreetings(MessageReceivedEvent event) {
         boolean status = iniFile.get(this.id,"Allows Greetings",boolean.class);
         iniFile.put(this.id,"Allows Greetings",!status);
         updateIni();
@@ -109,7 +142,7 @@ class ServerSettings {
                 -1,true);
     }
 
-    private void setMessagesNewUsers(MessageReceivedEvent event) {
+    private void iSetMessagesNewUsers(MessageReceivedEvent event) {
         if(iniFile.get(id).get("New User Message").length()==0){
             sendMessage(event.getChannel(),"Please set a message first",120,false);
             return;
@@ -122,9 +155,22 @@ class ServerSettings {
                 -1,true);
     }
 
-    private void setNewUserMessage(String newUserMessage) {
+    private void iSetWelcomeMessage(String newUserMessage) {
         iniFile.put(this.id,"New User Message",newUserMessage);
         updateIni();
+    }
+
+    private void iShowServerSettings(MessageReceivedEvent event) {
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.withTitle("Server Settings Status");
+        iniFile.get(id).keySet().forEach(k -> {
+            try {
+                eb.appendField(k,iniFile.get(id).get(k),false);
+            }catch (IllegalArgumentException e){
+                eb.appendField(k,"<empty>",false);
+            }
+        });
+        sendMessage(event.getChannel(),event.getAuthor().mention(),eb.build(),-1,true);
     }
 
     private void updateIni(){
@@ -136,18 +182,5 @@ class ServerSettings {
         }finally {
             lock.writeLock().unlock();
         }
-    }
-
-    private void showServerSettings(MessageReceivedEvent event) {
-        EmbedBuilder eb = new EmbedBuilder();
-        eb.withTitle("Server Settings Status");
-        iniFile.get(id).keySet().forEach(k -> {
-            try {
-                eb.appendField(k,iniFile.get(id).get(k),false);
-            }catch (IllegalArgumentException e){
-                eb.appendField(k,"<empty>",false);
-            }
-        });
-        sendMessage(event.getChannel(),event.getAuthor().mention(),eb.build(),-1,true);
     }
 }
