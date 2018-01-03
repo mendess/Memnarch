@@ -1,4 +1,4 @@
-package com.github.mendess2526.memnarch.sfx;
+package com.github.mendess2526.memnarch.sounds;
 
 import com.github.mendess2526.memnarch.Command;
 import com.github.mendess2526.memnarch.Main;
@@ -7,23 +7,29 @@ import org.ini4j.Wini;
 import sx.blah.discord.handle.impl.events.guild.GuildEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelJoinEvent;
-import sx.blah.discord.handle.obj.*;
+import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.IGuild;
+import sx.blah.discord.handle.obj.IVoiceChannel;
+import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.audio.AudioPlayer;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
-import static com.github.mendess2526.memnarch.BotUtils.hasPermission;
-import static com.github.mendess2526.memnarch.BotUtils.sendMessage;
+import static com.github.mendess2526.memnarch.BotUtils.*;
 import static com.github.mendess2526.memnarch.LoggerService.*;
 
 @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "unused"})
 public class Greetings {
+    //TODO fix support files
+    private static final String greetDirPath = DEFAULT_FILE_PATH + "sounds/";
     static abstract class CGreetings implements Command{
         //TODO implement
         @Override
@@ -74,7 +80,7 @@ public class Greetings {
                     log(event.getGuild(),"Invalid Argument: "+args.get(0), INFO);}
                 HashMap<String,Set<String>> cmds = new HashMap<>();
                 cmds.put("Greetings", commandMap.keySet());
-                boolean enabled = Main.sfx.get(event.getGuild().getLongID()).isGreetable(event.getAuthor().getLongID());
+                boolean enabled = Main.sounds.get(event.getGuild().getLongID()).isGreetable(event.getAuthor().getLongID());
                 EmbedBuilder eb = new EmbedBuilder().withTitle(enabled ? "Greetings are enabled for you" : "Greetings are not enabled for you")
                                                     .withColor(enabled?0:255,enabled?255:0,0);
                 sendMessage(event.getChannel(),eb.build(),120,false);
@@ -112,8 +118,8 @@ public class Greetings {
     }
 
     private static File guildFile(Long id) throws IOException{
-        log(null,"Reading sfx ini for guild: "+id, INFO);
-        File greetDir = new File("sfx");
+        log(null,"Reading sounds ini for guild: "+id, INFO);
+        File greetDir = new File(greetDirPath);
         if(!greetDir.exists()){
             log(null,"Folder doesn't exist, creating folder...", INFO);
             boolean dirMade = greetDir.mkdirs();
@@ -123,7 +129,7 @@ public class Greetings {
             }
             log(null,"Folder created", SUCC);
         }
-        File greetFile = new File("sfx/"+id+".ini");
+        File greetFile = new File(greetDirPath+id+".ini");
         if(!greetFile.exists()){
             log(null,"File doesn't exist, creating file...", INFO);
             boolean fileMade = greetFile.createNewFile();
@@ -152,23 +158,23 @@ public class Greetings {
 
     // Instance methods
     public Greetings(IGuild guild) throws IOException{
-        this.id = guild.getLongID();
+        /*this.id = guild.getLongID();
         this.guild = guild;
         this.iniLock = new ReentrantReadWriteLock();
         this.listLock = new ReentrantReadWriteLock();
         this.iniFile = new Wini(guildFile(id));
         this.greetings = new ArrayList<>();
-        File greetingsFile = new File("sfx/"+this.id);
+        File greetingsFile = new File(greetDirPath+this.id);
         if(!greetingsFile.exists()){
             if(!greetingsFile.createNewFile()){
-                throw new IOException("Couldn't create sfx list file");
+                throw new IOException("Couldn't create sounds list file");
             }
         }
         try(BufferedReader br = new BufferedReader(new FileReader(greetingsFile))){
             for(String line; (line = br.readLine())!=null; ){
                 greetings.add(line);
             }
-        }
+        }*/
     }
 
     private void iGreetMe(MessageReceivedEvent event) {
@@ -236,13 +242,13 @@ public class Greetings {
 
     private void add(MessageReceivedEvent event, String searchStr){
         if(searchStr.length()==0){
-            sendMessage(event.getChannel(),"I need to know what you want to add. Use `|sfx <list` to know what sounds you can add",120,false);
+            sendMessage(event.getChannel(),"I need to know what you want to add. Use `|sounds <list` to know what sounds you can add",120,false);
             return;
         }
         File[] songDir = SfxModule.songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
         log(event.getGuild(),"Songs that match: "+ Arrays.toString(songDir), INFO);
         if (songDir == null || songDir.length == 0) {
-            sendMessage(event.getChannel(), "No files in the sfx folder match your query", 120, false);
+            sendMessage(event.getChannel(), "No files in the sounds folder match your query", 120, false);
             return;
         }
         if(songDir.length>1){
@@ -271,7 +277,7 @@ public class Greetings {
             sendMessage(event.getChannel(),"More then one greeting matches that name",120,false);
         }else{
             this.greetings = this.greetings.stream().filter(s -> !s.toUpperCase().contains(searchStr)).collect(Collectors.toList());
-            log(event.getGuild(),"List of sfx after removing: "+ this.greetings.toString(), INFO);
+            log(event.getGuild(),"List of sounds after removing: "+ this.greetings.toString(), INFO);
             updateFile();
             sendMessage(event.getChannel(),"Greeting removed",120,false);
         }
@@ -281,7 +287,7 @@ public class Greetings {
         log(guild,"Updating List File", INFO);
         try{
             listLock.writeLock().lock();
-            BufferedWriter bw = new BufferedWriter(new FileWriter("sfx/"+id.toString()));
+            BufferedWriter bw = new BufferedWriter(new FileWriter(greetDirPath+id.toString()));
             for (String greeting : greetings) {
                 log(guild, "Writing "+greeting+" to file", INFO);
                 bw.write(greeting+"\n");
@@ -297,6 +303,6 @@ public class Greetings {
     private void list(IChannel channel) {
         StringBuilder s = new StringBuilder();
         greetings.forEach(g -> s.append(WordUtils.capitalizeFully(g)).append("\n"));
-        sendMessage(channel,new EmbedBuilder().withTitle("List of sfx").withDesc(s.toString()).build(),-1,true);
+        sendMessage(channel,new EmbedBuilder().withTitle("List of sounds").withDesc(s.toString()).build(),-1,true);
     }
 }

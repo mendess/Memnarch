@@ -60,7 +60,6 @@ public class ServerSettings {
             }
         });
     }
-
     // Class Methods
     public static void serverSettings(MessageReceivedEvent event, List<String> args) {
         log(event.getGuild(), "Server settings args: " + args.toString(), INFO);
@@ -108,7 +107,8 @@ public class ServerSettings {
         this.lock = new ReentrantReadWriteLock();
         try{
             lock.readLock().lock();
-            iniFile = new Wini(new File("./settings.ini"));
+            File f = new File(SERVERS_PATH);
+            iniFile = new Wini(f);
         }finally {
             lock.readLock().unlock();
         }

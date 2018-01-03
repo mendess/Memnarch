@@ -8,8 +8,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
+
+import static com.github.mendess2526.memnarch.BotUtils.DEFAULT_FILE_PATH;
 
 
 @SuppressWarnings("WeakerAccess")
@@ -47,12 +48,17 @@ public class LoggerService {
 
     public static void log(IGuild guild, Exception e, String method){
         log(guild,e.getClass().getCanonicalName()+" in "+method+": "+e.getMessage(), ERROR);
-        logToFile(Arrays.toString(e.getStackTrace()));
+        StringBuilder stackTrace = new StringBuilder();
+        StackTraceElement[] ste = e.getStackTrace();
+        for(StackTraceElement aSte : ste){
+            stackTrace.append(aSte.toString()).append("\n");
+        }
+        logToFile(stackTrace.toString());
     }
 
     private static void logToFile(String message){
         try {
-            Writer writer = new BufferedWriter(new FileWriter("log.txt", true));
+            Writer writer = new BufferedWriter(new FileWriter(DEFAULT_FILE_PATH+"log.txt", true));
             writer.write( message + System.lineSeparator());
             writer.close();
         } catch (IOException e) {

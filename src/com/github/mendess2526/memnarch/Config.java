@@ -10,15 +10,17 @@ import java.io.InputStreamReader;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static com.github.mendess2526.memnarch.BotUtils.*;
 import static com.github.mendess2526.memnarch.LoggerService.*;
 
 class Config {
+    private static final String settingsIniPath = DEFAULT_FILE_PATH+"settings.ini";
     private String token;
     @SuppressWarnings("FieldCanBeLocal")
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     Config() throws IOException {
-        File file = new File("./settings.ini");
+        File file = new File(settingsIniPath);
         if(!file.exists()){
             if(!file.createNewFile()){
                 return;

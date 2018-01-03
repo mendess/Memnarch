@@ -32,9 +32,11 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 public class BotUtils {
 
     private static final String ERROR_SMTH_WRONG = "Something went wrong, contact the owner of the bot";
-    static final String X = "\u2716";//"\u274C";
+    static final String X = "\u2716";
     static final String R = "\uD83C\uDDF7";
-    public static final String DEFAULT_FILE_PATH = "./files/";
+    public static final String DEFAULT_FILE_PATH = "files/";
+    public static final String USERS_PATH = DEFAULT_FILE_PATH+"users.ini";
+    public static final String SERVERS_PATH = DEFAULT_FILE_PATH+"servers.ini";
 
     private static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
         Thread t = new Thread(() -> {
@@ -142,11 +144,7 @@ public class BotUtils {
         }else if(new File(folderName+"/"+filename).exists()){
             sendMessage(event.getChannel(),"File with that name already exists",120,false);
         }else {
-            if(!new File(folderName).exists()) {
-                if (!mkFolder(event,folderName)) {
-                    return;
-                }
-            }
+            if (!mkFolder(event,folderName)) return;
             log(event.getGuild(),"FilePath: "+folderName+"/"+filename, INFO);
             URL url;
             ReadableByteChannel rbc;
@@ -180,14 +178,17 @@ public class BotUtils {
     }
 
     public static boolean mkFolder(Event event, String folderName){
-        boolean success = !new File(folderName).mkdirs();
-        if (!success) {
-            IGuild guild = null;
-            if(event instanceof GuildEvent){
-                guild = ((GuildEvent) event).getGuild();
+        boolean success = true;
+        if(!new File(folderName).exists()){
+            success = new File(folderName).mkdirs();
+            if (!success) {
+                IGuild guild = null;
+                if(event instanceof GuildEvent){
+                    guild = ((GuildEvent) event).getGuild();
+                }
+                contactOwner(event,"Couldn't create "+folderName+" folder");
+                log(guild,"Couldn't create "+folderName+" folder", ERROR);
             }
-            contactOwner(event,"Couldn't create "+folderName+" folder");
-            log(guild,"Couldn't create "+folderName+" folder", ERROR);
         }
         return success;
     }

@@ -8,50 +8,79 @@ import sx.blah.discord.util.EmbedBuilder;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static com.github.mendess2526.memnarch.BotUtils.USERS_PATH;
 import static com.github.mendess2526.memnarch.LoggerService.log;
 
 public class MiscTasks {
     @SuppressWarnings("SpellCheckingInspection")
-    private static final String aRcountingFile = BotUtils.DEFAULT_FILE_PATH+"aRcounting.ini";
     private static Wini iniFile;
+    private static final DateTimeFormatter dateForm = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private static final String rReactionsStr = "rReactions";
+    private static final String rReactionsDateStr = "rReactionsDate";
+    private static final String rEmojisStr = "rEmojis";
+    private static final String rEmojisDateStr = "rEmojisDate";
 
     public static void rRank(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
         lock.readLock().lock();
         Wini iniFile;
         try{
-            iniFile = new Wini(new File(MiscTasks.aRcountingFile));
+            iniFile = new Wini(new File(USERS_PATH));
         }catch(IOException e){
             log(event.getGuild(),e,"MiscCommands.rRank");
             return;
         }finally{
             lock.readLock().unlock();
         }
-        Integer rReactions = iniFile.get(userID, "rReaction", Integer.class);
-        LocalDateTime rReactionsDate = iniFile.get(userID, "rReactionDate", LocalDateTime.class);
-        Integer rEmojis = iniFile.get(userID, "rEmojis", Integer.class);
-        LocalDateTime rEmojisDate = iniFile.get(userID, "rEmojisDate", LocalDateTime.class);
+        Integer rReactions = iniFile.get(userID, rReactionsStr, Integer.class);
+        LocalDate rReactionsDate = LocalDate
+                .parse(iniFile.get(userID, rReactionsDateStr, String.class),dateForm);
+        Integer rEmojis = iniFile.get(userID, rEmojisStr, Integer.class);
+        LocalDate rEmojisDate = LocalDate
+                .parse(iniFile.get(userID, rEmojisDateStr, String.class), dateForm);
 
         boolean ranked = true;
         if(rReactions == null || rReactionsDate == null || rEmojis == null || rEmojisDate == null)
             ranked = false;
         EmbedBuilder eb = new EmbedBuilder();
         if(ranked){
+            int rank = 0;
+            int eRank = 0;
+            int rRank = 0;
+            int fib = 1;
+            int lastFib = 0;
+            int eFib = 0;
+            int rFib = 0;
+            while(fib<=rEmojis || fib<=rReactions){
+                int tmp = fib;
+                fib += lastFib;
+                lastFib = tmp;
+                rank++;
+                if(fib>rEmojis && eFib==0){
+                    eRank = rank;
+                    eFib = fib;
+                }
+                if(fib>rReactions && rFib==0){
+                    rRank = rank;
+                    rFib = fib;
+                }
+            }
             eb.withTitle("Your RRank:");
             eb.appendField("Emoji Rank:", "" +
-                    "#: " + rEmojis
-                    + "\n" + "Last Post: " + rEmojisDate, true);
+                                "Level: " + eRank
+                       + "\n" + "Exp: " + rEmojis + "/" + eFib, true);
             eb.appendField("Reaction Rank:", "" +
-                    "#: " + rReactions
-                    + "\n" + "LastPost: " + rReactionsDate, true);
-            if(LocalDateTime.now().minus(1, ChronoUnit.DAYS).isAfter(rEmojisDate)
-                    || LocalDateTime.now().minus(1, ChronoUnit.DAYS).isAfter(rReactionsDate)){
+                                "Level: " + rRank
+                       + "\n" + "Exp: " + rReactions + "/" + rFib, true);
+            if(LocalDate.now().minus(1, ChronoUnit.DAYS).isAfter(rEmojisDate)
+                    || LocalDate.now().minus(1, ChronoUnit.DAYS).isAfter(rReactionsDate)){
                 eb.withFooterText("You've been slacking... Post some R's ffs");
             }
         }else{
@@ -64,11 +93,11 @@ public class MiscTasks {
         String userID = Long.toString(event.getAuthor().getLongID());
         lock.writeLock().lock();
         try{
-            iniFile = new Wini(new File(aRcountingFile));
-            Integer rReactions = iniFile.get(userID,"rReactions",Integer.class);
+            iniFile = new Wini(new File(USERS_PATH));
+            Integer rReactions = iniFile.get(userID,"rReactions", Integer.class);
             if(rReactions==null) rReactions = 0;
-            iniFile.put(userID,"rReactions", rReactions + 1);
-            iniFile.put(userID,"rReactionsDate", LocalDateTime.now());
+            iniFile.put(userID,rReactionsStr, rReactions + 1);
+            iniFile.put(userID,rReactionsDateStr, LocalDate.now().format(dateForm));
             iniFile.store();
         }catch(IOException e){
             log(event.getGuild(),e,"MiscTasks.handleR(Reaction)");
@@ -81,11 +110,11 @@ public class MiscTasks {
         String userID = Long.toString(event.getAuthor().getLongID());
         lock.writeLock().lock();
         try{
-            iniFile = new Wini(new File(aRcountingFile));
+            iniFile = new Wini(new File(USERS_PATH));
             Integer rEmojis = iniFile.get(userID,"rEmojis",Integer.class);
             if(rEmojis==null) rEmojis = 0;
-            iniFile.put(userID,"rEmojis",rEmojis+1);
-            iniFile.put(userID,"rEmojisDate", LocalDateTime.now());
+            iniFile.put(userID,rEmojisStr,rEmojis+1);
+            iniFile.put(userID,rEmojisDateStr, LocalDate.now().format(dateForm));
             iniFile.store();
         }catch(IOException e){
             log(event.getGuild(),e,"MiscTasks.handleR(Message)");
