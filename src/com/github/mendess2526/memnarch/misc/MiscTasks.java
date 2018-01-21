@@ -39,25 +39,26 @@ public class MiscTasks {
         }finally{
             lock.readLock().unlock();
         }
-        Integer rReactions = iniFile.get(userID, rReactionsStr, Integer.class);
-        LocalDate rReactionsDate = LocalDate
-                .parse(iniFile.get(userID, rReactionsDateStr, String.class),dateForm);
-        Integer rEmojis = iniFile.get(userID, rEmojisStr, Integer.class);
-        LocalDate rEmojisDate = LocalDate
-                .parse(iniFile.get(userID, rEmojisDateStr, String.class), dateForm);
-
-        boolean ranked = true;
-        if(rReactions == null || rReactionsDate == null || rEmojis == null || rEmojisDate == null)
-            ranked = false;
         EmbedBuilder eb = new EmbedBuilder();
-        if(ranked){
-            int rank = 0;
-            int eRank = 0;
-            int rRank = 0;
-            int fib = 1;
-            int lastFib = 0;
-            int eFib = 0;
-            int rFib = 0;
+        if(iniFile.containsKey(userID)){
+            Integer rReactions = iniFile.get(userID, rReactionsStr, Integer.class);
+            LocalDate rReactionsDate = null;
+            try{
+                rReactionsDate = LocalDate
+                        .parse(iniFile.get(userID, rReactionsDateStr, String.class),dateForm);
+            }catch(NullPointerException ignored){
+            }
+            Integer rEmojis = iniFile.get(userID, rEmojisStr, Integer.class);
+            LocalDate rEmojisDate = null;
+            try{
+                rEmojisDate = LocalDate
+                        .parse(iniFile.get(userID, rEmojisDateStr, String.class), dateForm);
+            }catch(NullPointerException ignored){
+            }
+            if(rEmojis==null) rEmojis = 0;
+            if(rReactions==null) rReactions = 0;
+            int rank, eRank, rRank, fib = 1, lastFib, eFib, rFib;
+            rank = eRank = rRank = lastFib = eFib = rFib = 0;
             while(fib<=rEmojis || fib<=rReactions){
                 int tmp = fib;
                 fib += lastFib;
@@ -74,13 +75,13 @@ public class MiscTasks {
             }
             eb.withTitle("Your RRank:");
             eb.appendField("Emoji Rank:", "" +
-                                "Level: " + eRank
-                       + "\n" + "Exp: " + rEmojis + "/" + eFib, true);
+                    "Level: " + eRank
+                    + "\n" + "Exp: " + rEmojis + "/" + eFib, true);
             eb.appendField("Reaction Rank:", "" +
-                                "Level: " + rRank
-                       + "\n" + "Exp: " + rReactions + "/" + rFib, true);
-            if(LocalDate.now().minus(1, ChronoUnit.DAYS).isAfter(rEmojisDate)
-                    || LocalDate.now().minus(1, ChronoUnit.DAYS).isAfter(rReactionsDate)){
+                    "Level: " + rRank
+                    + "\n" + "Exp: " + rReactions + "/" + rFib, true);
+            if((rEmojisDate!=null && LocalDate.now().minus(1, ChronoUnit.DAYS).isAfter(rEmojisDate))
+                    || (rReactionsDate!=null && LocalDate.now().minus(1, ChronoUnit.DAYS).isAfter(rReactionsDate))){
                 eb.withFooterText("You've been slacking... Post some R's ffs");
             }
         }else{
