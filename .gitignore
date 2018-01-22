@@ -23,8 +23,6 @@ hs_err_pid*
 
 .idea
 *.iml
-greetings/
-log.txt
 modules/
 out/
 target/
