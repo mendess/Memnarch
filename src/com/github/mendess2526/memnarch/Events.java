@@ -9,7 +9,13 @@ import com.github.mendess2526.memnarch.serversettings.CServerSettings;
 import com.github.mendess2526.memnarch.serversettings.ServerSettings;
 import com.github.mendess2526.memnarch.sounds.CSounds;
 import com.github.mendess2526.memnarch.sounds.Greetings;
+import com.github.mendess2526.memnarch.sounds.Jukebox;
 import com.github.mendess2526.memnarch.sounds.SfxModule;
+import com.github.mendess2526.memnarch.sounds.playerHelpers.GuildMusicManager;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -38,6 +44,20 @@ public class Events {
     public static final Map<String, Command> commandMap = new HashMap<>();
 
     static {
+
+        commandMap.put("P",           new CSounds() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args) {
+                Jukebox.queue(event,args);
+            }
+        });
+        commandMap.put("N",           new CSounds() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args) {
+                Jukebox.skip(event);
+            }
+        });
+
         commandMap.put("HELP",        new CMiscCommands() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
