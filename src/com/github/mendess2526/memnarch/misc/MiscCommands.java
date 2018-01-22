@@ -46,6 +46,10 @@ public class MiscCommands{
     }
 
     public static void whoAreYou(MessageReceivedEvent event) {
-        BotUtils.sendMessage(event.getChannel(),new EmbedBuilder().withTitle("I AM MEMNARCH").withImage("http://magiccards.info/scans/en/arc/112.jpg").withDesc("Sauce code: [GitHub](https://github.com/Mendess2526/Memnarch)").build(),-1,true);
+        BotUtils.sendMessage(event.getChannel(),
+                new EmbedBuilder().withTitle("I AM MEMNARCH")
+                                  .withImage("http://magiccards.info/scans/en/arc/112.jpg")
+                                  .withDesc("Sauce code: [GitHub](https://github.com/Mendess2526/Memnarch)")
+                                  .build(),-1,true);
     }
 }

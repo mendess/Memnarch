@@ -1,4 +1,4 @@
-package com.github.mendess2526.memnarch.sfx;
+package com.github.mendess2526.memnarch.sounds;
 
 import com.github.mendess2526.memnarch.Command;
 import com.github.mendess2526.memnarch.Events;
@@ -37,7 +37,7 @@ public class SfxModule {
         }
     }
     private static Map<String,Command> commandMap = new HashMap<>();
-
+    private static final String sfxFolderPath = DEFAULT_FILE_PATH+"sfx/";
     static {
         commandMap.put("<LIST",     new CSFXModule(){
             @Override
@@ -98,7 +98,7 @@ public class SfxModule {
             return;
         }
         if (songDir.length == 0) {
-            sendMessage(event.getChannel(), "No files in the sfx folder match your query", 120, false);
+            sendMessage(event.getChannel(), "No files in the sounds folder match your query", 120, false);
             return;
         }
         audioP.clear();
@@ -116,7 +116,7 @@ public class SfxModule {
     public static void list(MessageReceivedEvent event) {
         File[] songDir = songsDir(event,File::isFile);
         EmbedBuilder eb = new EmbedBuilder();
-        eb.withTitle("List of sfx files:");
+        eb.withTitle("List of sounds files:");
         if(songDir==null || songDir.length==0){
             eb.withDesc("**No files :(**");
         }else{
@@ -139,7 +139,7 @@ public class SfxModule {
                 count=0;column++;
             }
         }
-        eb.withFooterText("Use "+ Events.BOT_PREFIX+"sfx <name> to play one");
+        eb.withFooterText("Use "+ Events.BOT_PREFIX+"sounds <name> to play one");
         sendMessage(event.getChannel(),event.getAuthor().mention(),eb.build(),-1,true);
     }
 
@@ -155,7 +155,7 @@ public class SfxModule {
             return;
         }
         IMessage.Attachment attach = attachments.get(0);
-        downloadFile(event,attach,"sfx");
+        downloadFile(event,attach,sfxFolderPath);
     }
 
     private static void delete(MessageReceivedEvent event, List<String> args) {
@@ -169,7 +169,7 @@ public class SfxModule {
         List<File> toDelete = Arrays.asList(songDir);
         log(event.getGuild(),"Files to delete: "+toDelete.toString(), INFO);
         if(toDelete.size()==0){
-            sendMessage(event.getChannel(),"No files in the sfx folder match your query",120,false);
+            sendMessage(event.getChannel(),"No files in the sounds folder match your query",120,false);
         }else if(toDelete.size()>1){
             sendMessage(event.getChannel(),"More than one file fits your query, please be more specific",120,false);
         }else{
@@ -193,7 +193,7 @@ public class SfxModule {
         List<File> toRetrieve = Arrays.asList(songDir);
         log(event.getGuild(),"Files to retrieve: "+toRetrieve.toString(), INFO);
         if(toRetrieve.size()==0){
-            sendMessage(event.getChannel(),"No files in the sfx folder match your query",120,false);
+            sendMessage(event.getChannel(),"No files in the sounds folder match your query",120,false);
         }else if(toRetrieve.size()>1){
             sendMessage(event.getChannel(),"More than one file fits your query, please be more specific",120,false);
         }else{
@@ -202,12 +202,12 @@ public class SfxModule {
     }
 
     static File[] songsDir(Event event, FileFilter filter){
-        File sfx = new File("sfx");
+        File sfx = new File(sfxFolderPath);
         File[] songDir = null;
         if(sfx.exists()){
-            songDir = new File("sfx").listFiles(filter);
+            songDir = new File("sounds").listFiles(filter);
         }else{
-            mkFolder(event,"sfx");
+            mkFolder(event,"sounds");
         }
         return songDir;
     }

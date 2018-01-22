@@ -7,9 +7,9 @@ import com.github.mendess2526.memnarch.rolechannels.CRoleChannels;
 import com.github.mendess2526.memnarch.rolechannels.RoleChannels;
 import com.github.mendess2526.memnarch.serversettings.CServerSettings;
 import com.github.mendess2526.memnarch.serversettings.ServerSettings;
-import com.github.mendess2526.memnarch.sfx.CSfx;
-import com.github.mendess2526.memnarch.sfx.Greetings;
-import com.github.mendess2526.memnarch.sfx.SfxModule;
+import com.github.mendess2526.memnarch.sounds.CSounds;
+import com.github.mendess2526.memnarch.sounds.Greetings;
+import com.github.mendess2526.memnarch.sounds.SfxModule;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -96,19 +96,19 @@ public class Events {
         });
 
 
-        commandMap.put("SFX",         new CSfx() {
+        commandMap.put("SFX",         new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 SfxModule.sfx(event);
             }
         });
-        commandMap.put("SFXLIST",     new CSfx() {
+        commandMap.put("SFXLIST",     new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 SfxModule.list(event);
             }
         });
-        commandMap.put("GREET",       new CSfx() {
+        commandMap.put("GREET",       new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 Greetings.greetings(event);
@@ -194,15 +194,15 @@ public class Events {
             if(event.getUser().isBot()){
                 return;
             }
-            if(Main.sfx.get(event.getGuild().getLongID()).isGreetable(event.getUser().getLongID())){
-                Main.sfx.get(event.getGuild().getLongID()).greet(event);
+            if(Main.sounds.get(event.getGuild().getLongID()).isGreetable(event.getUser().getLongID())){
+                Main.sounds.get(event.getGuild().getLongID()).greet(event);
                 return;
             }
             Random rand = new Random();
             int randomNum = rand.nextInt(128);
             if(randomNum<2){
                 LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.SUCC);
-                Main.sfx.get(event.getGuild().getLongID()).greet(event);
+                Main.sounds.get(event.getGuild().getLongID()).greet(event);
             }else{
                 LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.INFO);
             }
