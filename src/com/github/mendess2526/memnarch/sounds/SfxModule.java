@@ -2,9 +2,17 @@ package com.github.mendess2526.memnarch.sounds;
 
 import com.github.mendess2526.memnarch.Command;
 import com.github.mendess2526.memnarch.Events;
+import com.github.mendess2526.memnarch.sounds.playerHelpers.GuildMusicManager;
+import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.apache.commons.lang3.text.WordUtils;
 import sx.blah.discord.api.events.Event;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.handle.obj.Permissions;
@@ -23,7 +31,7 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 
 
 @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "unused"})
-public class SfxModule {
+public class SfxModule extends AbstractSoundModule{
     static abstract class CSFXModule implements Command{
         //TODO implement
         @Override
@@ -36,9 +44,7 @@ public class SfxModule {
             return null;
         }
     }
-    private static Map<String,Command> commandMap = new HashMap<>();
-    private static final String sfxFolderPath = DEFAULT_FILE_PATH+"sfx/";
-    static {
+    public SfxModule(){
         commandMap.put("<LIST",     new CSFXModule(){
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
@@ -64,10 +70,10 @@ public class SfxModule {
             }
         });
     }
+    private final Map<String,Command> commandMap = new HashMap<>();
+    private final String sfxFolderPath = DEFAULT_FILE_PATH+"sfx/";
 
-    public static void sfx(MessageReceivedEvent event){
-        sendMessage(event.getChannel(),"Sfx is disabled because the guys that made the API screwed up. Hopefully it will be fixed soon™",120,false);
-/*
+    public void sfx(MessageReceivedEvent event, List<String> args){
         if (args.size() == 0) {
             HashMap<String, Set<String>> cmds = new HashMap<>();
             Set<String> options = new HashSet<>();
@@ -82,38 +88,60 @@ public class SfxModule {
             commandMap.get(args.get(0).toUpperCase()).runCommand(event,args.subList(1,args.size()));
         }else{
             play(event,args);
-        }*/
+        }
     }
 
-    private static void play(MessageReceivedEvent event, List<String> args) {
+    private void play(MessageReceivedEvent event, List<String> args) {
         IVoiceChannel vChannel = event.getAuthor().getVoiceStateForGuild(event.getGuild()).getChannel();
         if (vChannel == null) {
             sendMessage(event.getChannel(), "Please join a voice channel before using this command!", 120, false);
             return;
         }
         String searchStr = String.join(" ", args);
-        AudioPlayer audioP = AudioPlayer.getAudioPlayerForGuild(event.getGuild());
+        GuildMusicManager audioP = getGuildAudioPlayer(event.getGuild());
+        log(event.getGuild(),searchStr,INFO);
         File[] songDir = songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
         if (songDir == null) {
             return;
         }
+        log(event.getGuild(), Arrays.toString(Arrays.stream(songDir).map(File::getAbsolutePath).toArray()),INFO);
         if (songDir.length == 0) {
-            sendMessage(event.getChannel(), "No files in the sounds folder match your query", 120, false);
+            sendMessage(event.getChannel(), "No files in the sfx folder match your query", 120, false);
             return;
         }
-        audioP.clear();
+        audioP.getScheduler().stop();
         vChannel.join();
         log(event.getGuild(),"Songs that match: "+ Arrays.toString(songDir), INFO);
-        try {
-            audioP.queue(songDir[0]);
-        } catch (IOException | UnsupportedAudioFileException e) {
-            log(event.getGuild(),e,"SfxModule.play");
-            sendMessage(event.getChannel(), "There was a problem playing that sound.", 120, false);
-            vChannel.leave();
-        }
+        playerManager.loadItemOrdered(audioP, songDir[0].getAbsolutePath(), new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(AudioTrack audioTrack) {
+                //Jukebox.pause(event);
+                play(audioP,audioTrack);
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist audioPlaylist) {
+                //
+            }
+
+            @Override
+            public void noMatches() {
+                sendMessage(event.getChannel(),"No files in the sfx folder match you query",30,false);
+            }
+
+            @Override
+            public void loadFailed(FriendlyException e) {
+                sendMessage(event.getChannel(),"Could not play: " +e.getMessage(),-1,false);
+                contactOwner(event,"Could not play: "+e.getMessage());
+            }
+        });
     }
 
-    public static void list(MessageReceivedEvent event) {
+    private void play(GuildMusicManager audioP, AudioTrack audioTrack) {
+        audioP.getScheduler().queue(audioTrack);
+    }
+
+    public void list(MessageReceivedEvent event) {
         File[] songDir = songsDir(event,File::isFile);
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of sounds files:");
@@ -143,7 +171,7 @@ public class SfxModule {
         sendMessage(event.getChannel(),event.getAuthor().mention(),eb.build(),-1,true);
     }
 
-    private static void add(MessageReceivedEvent event) {
+    private void add(MessageReceivedEvent event) {
         if(!event.getAuthor().getPermissionsForGuild(event.getGuild()).contains(Permissions.MANAGE_CHANNELS)
             && !event.getAuthor().equals(event.getClient().getApplicationOwner())){
             sendMessage(event.getChannel(),"You don't have permission to use that command",120,false);
@@ -158,7 +186,7 @@ public class SfxModule {
         downloadFile(event,attach,sfxFolderPath);
     }
 
-    private static void delete(MessageReceivedEvent event, List<String> args) {
+    private void delete(MessageReceivedEvent event, List<String> args) {
         if(!event.getAuthor().equals(event.getClient().getApplicationOwner())){
             sendMessage(event.getChannel(),"Only the owner of the bot can use that command",120,false);
             return;
@@ -185,7 +213,7 @@ public class SfxModule {
         }
     }
 
-    private static void retrieve(MessageReceivedEvent event, List<String> args){
+    private void retrieve(MessageReceivedEvent event, List<String> args){
         args.remove(0);
         String searchStr = String.join(" ", args);
         File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));
@@ -201,13 +229,15 @@ public class SfxModule {
         }
     }
 
-    static File[] songsDir(Event event, FileFilter filter){
+    File[] songsDir(Event event, FileFilter filter){
         File sfx = new File(sfxFolderPath);
         File[] songDir = null;
         if(sfx.exists()){
-            songDir = new File("sounds").listFiles(filter);
+            log(null,sfxFolderPath,INFO);
+            songDir = sfx.listFiles(/*filter*/);
+            log(null, Arrays.toString(Arrays.stream(songDir).map(File::getAbsolutePath).toArray()),INFO);
         }else{
-            mkFolder(event,"sounds");
+            mkFolder(event,sfxFolderPath);
         }
         return songDir;
     }

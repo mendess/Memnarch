@@ -17,9 +17,9 @@ public class GuildMusicManager {
      * @param manager Audio player manager to use for creating the player.
      */
     public GuildMusicManager(AudioPlayerManager manager) {
-        player = manager.createPlayer();
-        provider = new AudioProvider(player);
-        scheduler = new TrackScheduler(player);
+        this.player = manager.createPlayer();
+        this.provider = new AudioProvider(player);
+        this.scheduler = new TrackScheduler(player);
     }
 
     /**

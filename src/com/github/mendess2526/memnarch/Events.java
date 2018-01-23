@@ -11,11 +11,6 @@ import com.github.mendess2526.memnarch.sounds.CSounds;
 import com.github.mendess2526.memnarch.sounds.Greetings;
 import com.github.mendess2526.memnarch.sounds.Jukebox;
 import com.github.mendess2526.memnarch.sounds.SfxModule;
-import com.github.mendess2526.memnarch.sounds.playerHelpers.GuildMusicManager;
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
@@ -42,19 +37,32 @@ public class Events {
     private static final String RED_X = "\u274C";
 
     public static final Map<String, Command> commandMap = new HashMap<>();
-
+    public static final Jukebox jukebox = new Jukebox();
+    public static final SfxModule sfxModule = new SfxModule();
     static {
 
         commandMap.put("P",           new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args) {
-                Jukebox.queue(event,args);
+                jukebox.queue(event,args);
             }
         });
         commandMap.put("N",           new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args) {
-                Jukebox.skip(event);
+                jukebox.skip(event);
+            }
+        });
+        commandMap.put("PAUSE",       new CSounds() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args) {
+                jukebox.pause(event);
+            }
+        });
+        commandMap.put("RESUME",      new CSounds() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args) {
+                jukebox.resume(event);
             }
         });
 
@@ -119,13 +127,14 @@ public class Events {
         commandMap.put("SFX",         new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
-                SfxModule.sfx(event);
+                if(args.get(0).startsWith("<")) jukebox.pause(event);
+                sfxModule.sfx(event,args);
             }
         });
         commandMap.put("SFXLIST",     new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
-                SfxModule.list(event);
+                sfxModule.list(event);
             }
         });
         commandMap.put("GREET",       new CSounds() {

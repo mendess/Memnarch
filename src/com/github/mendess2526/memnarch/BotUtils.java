@@ -141,11 +141,11 @@ public class BotUtils {
             sendMessage(event.getChannel(),"You can only add `.mp3` files",120,false);
         }else if(attach.getFilesize()>204800) {
             sendMessage(event.getChannel(), "File too big, please keep it under 200kb", 120, false);
-        }else if(new File(folderName+"/"+filename).exists()){
+        }else if(new File(folderName+filename).exists()){
             sendMessage(event.getChannel(),"File with that name already exists",120,false);
         }else {
             if (!mkFolder(event,folderName)) return;
-            log(event.getGuild(),"FilePath: "+folderName+"/"+filename, INFO);
+            log(event.getGuild(),"FilePath: "+folderName+filename, INFO);
             URL url;
             ReadableByteChannel rbc;
             FileOutputStream fos;

@@ -20,7 +20,7 @@ public class TrackScheduler {
         // Because we will be removing from the "head" of the queue frequently, a LinkedList is a better implementation
         // since all elements won't have to be shifted after removing. Additionally, choosing to add in between the queue
         // will similarly not cause many elements to shift and wil only require a couple of node changes.
-        queue = Collections.synchronizedList(new LinkedList<>());
+        this.queue = Collections.synchronizedList(new LinkedList<>());
         this.player = player;
 
         // For encapsulation, keep the listener anonymous.
@@ -44,10 +44,10 @@ public class TrackScheduler {
         // Calling startTrack with the noInterrupt set to true will start the track only if nothing is currently playing. If
         // something is playing, it returns false and does nothing. In that case the player was already playing so this
         // track goes to the queue instead.
-        boolean playing = player.startTrack(track, true);
+        boolean playing = this.player.startTrack(track, true);
 
         if(!playing) {
-            queue.add(track);
+            this.queue.add(track);
         }
 
         return playing;
@@ -58,12 +58,12 @@ public class TrackScheduler {
      * @return The track that was stopped, null if there wasn't anything playing
      */
     public synchronized AudioTrack nextTrack() {
-        AudioTrack currentTrack = player.getPlayingTrack();
-        AudioTrack nextTrack = queue.isEmpty() ? null : queue.remove(0);
+        AudioTrack currentTrack = this.player.getPlayingTrack();
+        AudioTrack nextTrack = this.queue.isEmpty() ? null : this.queue.remove(0);
 
         // Start the next track, regardless of if something is already playing or not. In case queue was empty, we are
         // giving null to startTrack, which is a valid argument and will simply stop the player.
-        player.startTrack(nextTrack, false);
+        this.player.startTrack(nextTrack, false);
         return currentTrack;
     }
 
@@ -76,5 +76,18 @@ public class TrackScheduler {
      */
     public List<AudioTrack> getQueue() {
         return this.queue;
+    }
+
+    public void pause() {
+        this.player.setPaused(true);
+    }
+
+    public void resume(){
+       this.player.setPaused(false);
+    }
+
+    public void stop(){
+        this.player.stopTrack();
+        this.queue.clear();
     }
 }
