@@ -4,25 +4,19 @@ import com.github.mendess2526.memnarch.Command;
 import com.github.mendess2526.memnarch.Events;
 import com.github.mendess2526.memnarch.sounds.playerHelpers.GuildMusicManager;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.apache.commons.lang3.text.WordUtils;
 import sx.blah.discord.api.events.Event;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.EmbedBuilder;
-import sx.blah.discord.util.audio.AudioPlayer;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,7 +24,7 @@ import static com.github.mendess2526.memnarch.BotUtils.*;
 import static com.github.mendess2526.memnarch.LoggerService.*;
 
 
-@SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "unused"})
+
 public class SfxModule extends AbstractSoundModule{
     static abstract class CSFXModule implements Command{
         //TODO implement
@@ -43,6 +37,9 @@ public class SfxModule extends AbstractSoundModule{
         public Set<Permissions> getPermissions(){
             return null;
         }
+    }
+    public static FileFilter filter(String searchStr){
+        return file -> file.getName().toUpperCase().contains(searchStr.toUpperCase());
     }
     public SfxModule(){
         commandMap.put("<LIST",     new CSFXModule(){
@@ -100,7 +97,7 @@ public class SfxModule extends AbstractSoundModule{
         String searchStr = String.join(" ", args);
         GuildMusicManager audioP = getGuildAudioPlayer(event.getGuild());
         log(event.getGuild(),searchStr,INFO);
-        File[] songDir = songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
+        File[] songDir = songsDir(event, filter(searchStr),sfxFolderPath);
         if (songDir == null) {
             return;
         }
@@ -142,7 +139,7 @@ public class SfxModule extends AbstractSoundModule{
     }
 
     public void list(MessageReceivedEvent event) {
-        File[] songDir = songsDir(event,File::isFile);
+        File[] songDir = songsDir(event,File::isFile,sfxFolderPath);
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("List of sounds files:");
         if(songDir==null || songDir.length==0){
@@ -192,7 +189,7 @@ public class SfxModule extends AbstractSoundModule{
             return;
         }
         String searchStr = String.join(" ", args);
-        File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));
+        File[] songDir = songsDir(event,filter(searchStr),sfxFolderPath);
 
         List<File> toDelete = Arrays.asList(songDir);
         log(event.getGuild(),"Files to delete: "+toDelete.toString(), INFO);
@@ -216,7 +213,7 @@ public class SfxModule extends AbstractSoundModule{
     private void retrieve(MessageReceivedEvent event, List<String> args){
         args.remove(0);
         String searchStr = String.join(" ", args);
-        File[] songDir = songsDir(event,s -> s.getName().toUpperCase().contains(searchStr));
+        File[] songDir = songsDir(event,filter(searchStr),sfxFolderPath);
 
         List<File> toRetrieve = Arrays.asList(songDir);
         log(event.getGuild(),"Files to retrieve: "+toRetrieve.toString(), INFO);
@@ -229,15 +226,14 @@ public class SfxModule extends AbstractSoundModule{
         }
     }
 
-    File[] songsDir(Event event, FileFilter filter){
-        File sfx = new File(sfxFolderPath);
+    static File[] songsDir(Event event, FileFilter filter, String path){
+        File sfx = new File(path);
         File[] songDir = null;
         if(sfx.exists()){
-            log(null,sfxFolderPath,INFO);
-            songDir = sfx.listFiles(/*filter*/);
+            songDir = sfx.listFiles(filter);
             log(null, Arrays.toString(Arrays.stream(songDir).map(File::getAbsolutePath).toArray()),INFO);
         }else{
-            mkFolder(event,sfxFolderPath);
+            mkFolder(event,path);
         }
         return songDir;
     }

@@ -27,3 +27,5 @@ modules/
 out/
 target/
 files/
+
+*Test.java

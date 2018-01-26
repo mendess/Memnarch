@@ -9,7 +9,6 @@ import com.github.mendess2526.memnarch.serversettings.CServerSettings;
 import com.github.mendess2526.memnarch.serversettings.ServerSettings;
 import com.github.mendess2526.memnarch.sounds.CSounds;
 import com.github.mendess2526.memnarch.sounds.Greetings;
-import com.github.mendess2526.memnarch.sounds.Jukebox;
 import com.github.mendess2526.memnarch.sounds.SfxModule;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
@@ -37,11 +36,11 @@ public class Events {
     private static final String RED_X = "\u274C";
 
     public static final Map<String, Command> commandMap = new HashMap<>();
-    public static final Jukebox jukebox = new Jukebox();
-    public static final SfxModule sfxModule = new SfxModule();
+//    private static final Jukebox jukebox = new Jukebox();
+    private static final SfxModule sfxModule = new SfxModule();
     static {
 
-        commandMap.put("P",           new CSounds() {
+    /*    commandMap.put("P",           new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args) {
                 jukebox.queue(event,args);
@@ -64,7 +63,7 @@ public class Events {
             public void runCommand(MessageReceivedEvent event, List<String> args) {
                 jukebox.resume(event);
             }
-        });
+        });*/
 
         commandMap.put("HELP",        new CMiscCommands() {
             @Override
@@ -127,7 +126,7 @@ public class Events {
         commandMap.put("SFX",         new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
-                if(args.get(0).startsWith("<")) jukebox.pause(event);
+//                if(args.get(0).startsWith("<")) jukebox.pause(event);
                 sfxModule.sfx(event,args);
             }
         });
@@ -158,7 +157,6 @@ public class Events {
         Main.initialiseGreetings(event.getGuild());
         Main.initialiseServerSettings(event.getGuild());
     }
-    //TODO refactor this according to MVC
     @EventSubscriber
     public void reactionEvent(ReactionAddEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
@@ -248,7 +246,7 @@ public class Events {
     @EventSubscriber
     public void trackStarted(TrackStartEvent event){
         if(Main.leaveVoice != null){
-            Main.leaveVoice.cancel(true);
+            Main.leaveVoice.get(event.getPlayer().getGuild().getLongID()).cancel(true);
             log(event.getPlayer().getGuild(),"Leave canceled", INFO);
         }
     }
@@ -258,7 +256,7 @@ public class Events {
         log(event.getPlayer().getGuild(),"Scheduling leaveChannel", INFO);
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
-        Main.leaveVoice = executor.schedule(leave,1, TimeUnit.MINUTES);
+        Main.leaveVoice.put(event.getPlayer().getGuild().getLongID(),executor.schedule(leave,1, TimeUnit.MINUTES));
     }
 
     @EventSubscriber

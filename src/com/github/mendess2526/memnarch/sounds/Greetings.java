@@ -29,7 +29,7 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection", "unused"})
 public class Greetings {
     //TODO fix support files
-    private static final String greetDirPath = DEFAULT_FILE_PATH + "sounds/";
+    private static final String greetDirPath = DEFAULT_FILE_PATH + "sfx/";
     static abstract class CGreetings implements Command{
         //TODO implement
         @Override
@@ -210,7 +210,7 @@ public class Greetings {
 
         AudioPlayer audioP = AudioPlayer.getAudioPlayerForGuild(event.getGuild());
 
-        File[] songDir = SfxModule.songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
+        File[] songDir = SfxModule.songsDir(event, file -> file.getName().toUpperCase().contains(searchStr),greetDirPath);
         if (songDir == null) {
             return;
         }
@@ -245,7 +245,7 @@ public class Greetings {
             sendMessage(event.getChannel(),"I need to know what you want to add. Use `|sounds <list` to know what sounds you can add",120,false);
             return;
         }
-        File[] songDir = SfxModule.songsDir(event, file -> file.getName().toUpperCase().contains(searchStr));
+        File[] songDir = SfxModule.songsDir(event, file -> file.getName().toUpperCase().contains(searchStr),greetDirPath);
         log(event.getGuild(),"Songs that match: "+ Arrays.toString(songDir), INFO);
         if (songDir == null || songDir.length == 0) {
             sendMessage(event.getChannel(), "No files in the sounds folder match your query", 120, false);

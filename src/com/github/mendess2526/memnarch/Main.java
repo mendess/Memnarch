@@ -20,7 +20,7 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 
 public class Main {
 
-    static volatile ScheduledFuture<?> leaveVoice;
+    static volatile Map<Long,ScheduledFuture<?>> leaveVoice;
     public static Map<Long,Greetings> greetings;
     public static Map<Long,ServerSettings> serverSettings;
 
