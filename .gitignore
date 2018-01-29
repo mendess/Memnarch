@@ -22,7 +22,6 @@
 hs_err_pid*
 
 .idea
-*.iml
 modules/
 out/
 target/
