@@ -23,9 +23,11 @@ import java.util.stream.Collectors;
 import static com.github.mendess2526.memnarch.BotUtils.*;
 import static com.github.mendess2526.memnarch.LoggerService.*;
 
-
-
+/**
+ * This class
+ */
 public class SfxModule extends AbstractSoundModule{
+
     static abstract class CSFXModule implements Command{
         //TODO implement
         @Override
@@ -38,9 +40,22 @@ public class SfxModule extends AbstractSoundModule{
             return null;
         }
     }
-    public static FileFilter filter(String searchStr){
+
+    private static FileFilter filter(String searchStr){
         return file -> file.getName().toUpperCase().contains(searchStr.toUpperCase());
     }
+
+    private static File[] songsDir(Event event, FileFilter filter, String path){
+        File sfx = new File(path);
+        File[] songDir = null;
+        if(sfx.exists()){
+            songDir = sfx.listFiles(filter);
+        }else{
+            mkFolder(event,path);
+        }
+        return songDir;
+    }
+
     public SfxModule(){
         commandMap.put("<LIST",     new CSFXModule(){
             @Override
@@ -224,17 +239,5 @@ public class SfxModule extends AbstractSoundModule{
         }else{
             sendFile(event.getChannel(), toRetrieve.get(0));
         }
-    }
-
-    static File[] songsDir(Event event, FileFilter filter, String path){
-        File sfx = new File(path);
-        File[] songDir = null;
-        if(sfx.exists()){
-            songDir = sfx.listFiles(filter);
-            log(null, Arrays.toString(Arrays.stream(songDir).map(File::getAbsolutePath).toArray()),INFO);
-        }else{
-            mkFolder(event,path);
-        }
-        return songDir;
     }
 }

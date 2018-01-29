@@ -8,7 +8,6 @@ import com.github.mendess2526.memnarch.rolechannels.RoleChannels;
 import com.github.mendess2526.memnarch.serversettings.CServerSettings;
 import com.github.mendess2526.memnarch.serversettings.ServerSettings;
 import com.github.mendess2526.memnarch.sounds.CSounds;
-import com.github.mendess2526.memnarch.sounds.Greetings;
 import com.github.mendess2526.memnarch.sounds.SfxModule;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
@@ -36,35 +35,8 @@ public class Events {
     private static final String RED_X = "\u274C";
 
     public static final Map<String, Command> commandMap = new HashMap<>();
-//    private static final Jukebox jukebox = new Jukebox();
     private static final SfxModule sfxModule = new SfxModule();
     static {
-
-    /*    commandMap.put("P",           new CSounds() {
-            @Override
-            public void runCommand(MessageReceivedEvent event, List<String> args) {
-                jukebox.queue(event,args);
-            }
-        });
-        commandMap.put("N",           new CSounds() {
-            @Override
-            public void runCommand(MessageReceivedEvent event, List<String> args) {
-                jukebox.skip(event);
-            }
-        });
-        commandMap.put("PAUSE",       new CSounds() {
-            @Override
-            public void runCommand(MessageReceivedEvent event, List<String> args) {
-                jukebox.pause(event);
-            }
-        });
-        commandMap.put("RESUME",      new CSounds() {
-            @Override
-            public void runCommand(MessageReceivedEvent event, List<String> args) {
-                jukebox.resume(event);
-            }
-        });*/
-
         commandMap.put("HELP",        new CMiscCommands() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
@@ -136,12 +108,6 @@ public class Events {
                 sfxModule.list(event);
             }
         });
-        commandMap.put("GREET",       new CSounds() {
-            @Override
-            public void runCommand(MessageReceivedEvent event, List<String> args){
-                Greetings.greetings(event);
-            }
-        });
 
 
         commandMap.put("SERVERSET",   new CServerSettings() {
@@ -154,7 +120,6 @@ public class Events {
 
     @EventSubscriber
     public void guildJoin(GuildCreateEvent event){
-        Main.initialiseGreetings(event.getGuild());
         Main.initialiseServerSettings(event.getGuild());
     }
     @EventSubscriber
@@ -213,28 +178,6 @@ public class Events {
             event.getUser().getOrCreatePMChannel().sendMessage(msg);
         }
     }
-    /*
-    @EventSubscriber
-    public void userVoiceJoin(UserVoiceChannelJoinEvent event) throws InterruptedException {
-        if(Greetings.canGreet(event)){
-            TimeUnit.MILLISECONDS.sleep(500);
-            if(event.getUser().isBot()){
-                return;
-            }
-            if(Main.sounds.get(event.getGuild().getLongID()).isGreetable(event.getUser().getLongID())){
-                Main.sounds.get(event.getGuild().getLongID()).greet(event);
-                return;
-            }
-            Random rand = new Random();
-            int randomNum = rand.nextInt(128);
-            if(randomNum<2){
-                LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.SUCC);
-                Main.sounds.get(event.getGuild().getLongID()).greet(event);
-            }else{
-                LoggerService.log(event.getGuild(),"Random number: "+randomNum,LoggerService.INFO);
-            }
-        }
-    }*/
     @EventSubscriber
     public void userVoiceLeave(UserVoiceChannelLeaveEvent event){
         if(event.getVoiceChannel().getConnectedUsers().contains(event.getClient().getOurUser())
