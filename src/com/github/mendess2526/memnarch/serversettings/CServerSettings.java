@@ -9,7 +9,7 @@ public abstract class CServerSettings implements Command {
     //TODO implement
     @Override
     public String getCommandGroup(){
-        return null;
+        return "Server Settings";
     }
 
     @Override

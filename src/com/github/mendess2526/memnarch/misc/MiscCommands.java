@@ -22,8 +22,8 @@ public class MiscCommands{
                 t = cmds.get(commandGroup);
             }else{
                 t = new HashSet<>();
-                t.add(k.getKey());
             }
+            t.add(k.getKey());
             cmds.put(commandGroup,t);
         }
         BotUtils.help(event.getAuthor(),event.getChannel(),cmds);

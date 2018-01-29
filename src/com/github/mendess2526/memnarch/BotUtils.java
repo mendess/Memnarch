@@ -118,7 +118,7 @@ public class BotUtils {
         commands.keySet().forEach(k -> {
             StringBuilder s = new StringBuilder();
             commands.get(k).forEach(nestedK -> s.append(nestedK.toLowerCase()).append("\n"));
-            eb.appendField(WordUtils.capitalizeFully(k),s.toString(), false);
+            eb.appendField(WordUtils.capitalizeFully(k),s.toString(), true);
         });
         eb.withFooterText("Prefix: "+Events.BOT_PREFIX);
         sendMessage(channel,user.mention(),eb.build(),-1,true);
