@@ -13,47 +13,35 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 import static com.github.mendess2526.memnarch.BotUtils.*;
 import static com.github.mendess2526.memnarch.LoggerService.*;
 
 
 public class ServerSettings {
-    static abstract class CServerSettingSub implements Command{
-        //TODO implement
-        @Override
-        public String getCommandGroup(){
-            return "Server Settings";
-        }
-
-        @Override
-        public Set<Permissions> getPermissions(){
-            return null;
-        }
-    }
     // Class Variables
-    //private static Permissions permissions = Permissions.MANAGE_SERVER;
     private static final Map<String,Command> commandMap = new HashMap<>();
     static {
-        commandMap.put("WELCOMEMSG",    new CServerSettingSub() {
+        commandMap.put("WELCOMEMSG",    new CServerSettings() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 setMessagesNewUsers(event);
             }
         });
-        commandMap.put("SETWELCOMEMSG", new CServerSettingSub() {
+        commandMap.put("SETWELCOMEMSG", new CServerSettings() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 setWelcomeMessage(event,args);
             }
         });
-        commandMap.put("GREETINGS",     new CServerSettingSub() {
+        commandMap.put("GREETINGS",     new CServerSettings() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 setAllowsGreetings(event);
             }
         });
-        commandMap.put("STATUS",        new CServerSettingSub() {
+        commandMap.put("STATUS",        new CServerSettings() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 showServerSettings(event);
@@ -63,14 +51,20 @@ public class ServerSettings {
     // Class Methods
     public static void serverSettings(MessageReceivedEvent event, List<String> args) {
         log(event.getGuild(), "Server settings args: " + args.toString(), INFO);
-        if (hasPermission(event, EnumSet.of(Permissions.MANAGE_SERVER))) {
+        if (hasPermission(event, EnumSet.of(Permissions.MANAGE_SERVER), true)) {
             if (args.size() == 0 || !commandMap.containsKey(args.get(0).toUpperCase())) {
                 HashMap<String, Set<String>> cmds = new HashMap<>();
-                cmds.put("ServerSettings", commandMap.keySet());
+                cmds.put("ServerSettings", commandMap.entrySet()
+                                                     .stream()
+                                                     .filter(kv -> hasPermission(event,
+                                                                                 kv.getValue().getPermissions(),
+                                                                                 false))
+                                                     .map(Map.Entry::getKey).collect(Collectors.toSet()));
                 help(event.getAuthor(), event.getChannel(), cmds);
             } else {
                 log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), INFO);
-                commandMap.get(args.get(0).toUpperCase()).runCommand(event, args.subList(1, args.size()));
+                Command command = commandMap.get(args.get(0).toUpperCase());
+                if(hasPermission(event,command.getPermissions(), true)) command.runCommand(event, args.subList(1, args.size()));
             }
         }
     }

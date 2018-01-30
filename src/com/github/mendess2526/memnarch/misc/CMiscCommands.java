@@ -3,6 +3,7 @@ package com.github.mendess2526.memnarch.misc;
 import com.github.mendess2526.memnarch.Command;
 import sx.blah.discord.handle.obj.Permissions;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 public abstract class CMiscCommands implements Command {
@@ -13,6 +14,6 @@ public abstract class CMiscCommands implements Command {
 
     @Override
     public Set<Permissions> getPermissions(){
-        return null;
+        return EnumSet.noneOf(Permissions.class);
     }
 }

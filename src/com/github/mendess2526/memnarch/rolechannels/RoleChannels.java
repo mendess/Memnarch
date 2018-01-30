@@ -34,7 +34,7 @@ public class RoleChannels {
 
         @Override
         public Set<Permissions> getPermissions(){
-            return null;
+            return EnumSet.of(Permissions.MANAGE_CHANNELS);
         }
     }
     private static final int JOIN = 0;
@@ -109,15 +109,21 @@ public class RoleChannels {
     
     // Managing Channels
     public static void handle(MessageReceivedEvent event, List<String> args){
-        if(hasPermission(event,permissions)) {
+        if(hasPermission(event,permissions, true)) {
             if (args.size() == 0 || !commandMap.containsKey(args.get(0).toUpperCase())) {
                 if (args.size() != 0) log(event.getGuild(), "Invalid Argument: " + args.get(0), INFO);
                 HashMap<String, Set<String>> cmds = new HashMap<>();
-                cmds.put("RoleChannels", commandMap.keySet());
+                cmds.put("RoleChannels", commandMap.entrySet()
+                                                   .stream()
+                                                   .filter(kv -> hasPermission(event,
+                                                                               kv.getValue().getPermissions(),
+                                                                               false))
+                                                   .map(Map.Entry::getKey).collect(Collectors.toSet()));
                 help(event.getAuthor(), event.getChannel(), cmds);
             } else {
                 log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), INFO);
-                commandMap.get(args.get(0).toUpperCase()).runCommand(event, args.subList(1, args.size()));
+                Command command = commandMap.get(args.get(0).toUpperCase());
+                if(hasPermission(event,command.getPermissions(), true)) command.runCommand(event, args.subList(1, args.size()));
             }
         }
     }

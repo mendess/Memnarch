@@ -37,7 +37,7 @@ public class SfxModule extends AbstractSoundModule{
 
         @Override
         public Set<Permissions> getPermissions(){
-            return null;
+            return EnumSet.of(Permissions.VOICE_USE_VAD);
         }
     }
 
@@ -65,6 +65,12 @@ public class SfxModule extends AbstractSoundModule{
         });
         commandMap.put("<ADD",      new CSFXModule() {
             @Override
+            public Set<Permissions> getPermissions(){
+                Set<Permissions> s = super.getPermissions();
+                s.add(Permissions.MANAGE_CHANNELS);
+                return s;
+            }
+            @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 add(event);
             }
@@ -86,10 +92,14 @@ public class SfxModule extends AbstractSoundModule{
     private final String sfxFolderPath = DEFAULT_FILE_PATH+"sfx/";
 
     public void sfx(MessageReceivedEvent event, List<String> args){
-        if (args.size() == 0) {
+        if (args.size() == 0 ||
+                (args.get(0).startsWith("<") && !commandMap.containsKey(args.get(0).toUpperCase()))) {
             HashMap<String, Set<String>> cmds = new HashMap<>();
             Set<String> options = new HashSet<>();
-            options.addAll(commandMap.keySet());
+            options.addAll(commandMap.entrySet()
+                                     .stream()
+                                     .filter(kv -> hasPermission(event,kv.getValue().getPermissions(),false))
+                                     .map(Map.Entry::getKey).collect(Collectors.toList()));
             options.add("\"name\"");
             cmds.put("Sfx", options);
             help(event.getAuthor(), event.getChannel(), cmds);
@@ -97,9 +107,10 @@ public class SfxModule extends AbstractSoundModule{
         }
         if(args.get(0).startsWith("<") && commandMap.containsKey(args.get(0).toUpperCase())){
             log(event.getGuild(), "Valid Argument: " + args.get(0).toUpperCase(), INFO);
-            commandMap.get(args.get(0).toUpperCase()).runCommand(event,args.subList(1,args.size()));
+            Command command = commandMap.get(args.get(0).toUpperCase());
+            if(hasPermission(event,command.getPermissions(), true)) command.runCommand(event,args.subList(1,args.size()));
         }else{
-            play(event,args);
+            if(hasPermission(event,EnumSet.of(Permissions.VOICE_USE_VAD), true)) play(event,args);
         }
     }
 

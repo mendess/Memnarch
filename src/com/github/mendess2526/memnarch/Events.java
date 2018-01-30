@@ -17,6 +17,7 @@ import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.impl.events.guild.voice.user.UserVoiceChannelLeaveEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IUser;
+import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.RequestBuffer;
 import sx.blah.discord.util.audio.events.TrackFinishEvent;
 import sx.blah.discord.util.audio.events.TrackStartEvent;
@@ -63,6 +64,13 @@ public class Events {
         });
         commandMap.put("SHUTDOWN",    new CMiscCommands() {
             @Override
+            public Set<Permissions> getPermissions(){
+                Set<Permissions> s = super.getPermissions();
+                s.add(Permissions.ADMINISTRATOR);
+                return s;
+            }
+
+            @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 MiscCommands.shutdown(event);
             }
@@ -76,6 +84,10 @@ public class Events {
 
 
         commandMap.put("ROLECHANNEL", new CRoleChannels() {
+            @Override
+            public Set<Permissions> getPermissions(){
+                return EnumSet.of(Permissions.MANAGE_CHANNELS);
+            }
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 RoleChannels.handle(event,args);
@@ -163,7 +175,7 @@ public class Events {
                 }
             }
         }
-        if(!event.getReaction().getUserReacted(event.getClient().getOurUser())){
+        else if(!event.getReaction().getUserReacted(event.getClient().getOurUser())){
             if(event.getReaction().getEmoji().getName().equals(BotUtils.R)){
                 log(event.getGuild(),"Found an R",INFO);
                 MiscTasks.handleR(event);
@@ -217,24 +229,25 @@ public class Events {
             return;
         }
 
-        String command[] = event.getMessage().getContent().split("\\s");
+        String query[] = event.getMessage().getContent().split("\\s");
 
-        if(command.length == 0){
+        if(query.length == 0){
             return;
         }
-        if(!command[0].startsWith(BOT_PREFIX)){
+        if(!query[0].startsWith(BOT_PREFIX)){
             return;
         }
 
-        String cmd = command[0].substring(1).toUpperCase();
+        String cmd = query[0].substring(1).toUpperCase();
 
-        List<String> args = new ArrayList<>(Arrays.asList(command));
+        List<String> args = new ArrayList<>(Arrays.asList(query));
         log(event.getGuild(),"Command: "+ cmd, INFO);
         args.remove(0);
 
         if(commandMap.containsKey(cmd)){
             log(event.getGuild(),"Valid command: "+cmd, SUCC);
-            commandMap.get(cmd).runCommand(event,args);
+            Command command = commandMap.get(cmd);
+            if(BotUtils.hasPermission(event,command.getPermissions(), true)) command.runCommand(event,args);
         }else{
             log(event.getGuild(),"Invalid command: "+cmd, UERROR);
         }

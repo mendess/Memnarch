@@ -3,6 +3,7 @@ package com.github.mendess2526.memnarch.serversettings;
 import com.github.mendess2526.memnarch.Command;
 import sx.blah.discord.handle.obj.Permissions;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 public abstract class CServerSettings implements Command {
@@ -14,7 +15,7 @@ public abstract class CServerSettings implements Command {
 
     @Override
     public Set<Permissions> getPermissions(){
-        return null;
+        return EnumSet.of(Permissions.MANAGE_SERVER);
     }
 
 }
