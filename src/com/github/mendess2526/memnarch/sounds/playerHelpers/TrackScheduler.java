@@ -52,7 +52,7 @@ public class TrackScheduler {
                         guild.getClient().getOurUser().getVoiceStateForGuild(guild).getChannel().leave();
                         LoggerService.log(guild,"Leaving voice channel due to inactivity",LoggerService.INFO);
                     };
-                    leaveVoice = executor.schedule(leave,10, TimeUnit.SECONDS);
+                    leaveVoice = executor.schedule(leave,1, TimeUnit.MINUTES);
                 }
 
             }
