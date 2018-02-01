@@ -19,13 +19,8 @@ import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.handle.obj.Permissions;
 import sx.blah.discord.util.RequestBuffer;
-import sx.blah.discord.util.audio.events.TrackFinishEvent;
-import sx.blah.discord.util.audio.events.TrackStartEvent;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static com.github.mendess2526.memnarch.LoggerService.*;
 
@@ -196,22 +191,6 @@ public class Events {
             && event.getVoiceChannel().getConnectedUsers().size()==1){
             event.getVoiceChannel().leave();
         }
-    }
-
-    @EventSubscriber
-    public void trackStarted(TrackStartEvent event){
-        if(Main.leaveVoice != null){
-            Main.leaveVoice.get(event.getPlayer().getGuild().getLongID()).cancel(true);
-            log(event.getPlayer().getGuild(),"Leave canceled", INFO);
-        }
-    }
-
-    @EventSubscriber
-    public void trackFinished(TrackFinishEvent event){
-        log(event.getPlayer().getGuild(),"Scheduling leaveChannel", INFO);
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        Runnable leave = () -> event.getPlayer().getGuild().getConnectedVoiceChannel().leave();
-        Main.leaveVoice.put(event.getPlayer().getGuild().getLongID(),executor.schedule(leave,1, TimeUnit.MINUTES));
     }
 
     @EventSubscriber

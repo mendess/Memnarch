@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
 
 import static com.github.mendess2526.memnarch.BotUtils.SERVERS_PATH;
 import static com.github.mendess2526.memnarch.BotUtils.USERS_PATH;
@@ -19,7 +18,6 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 
 public class Main {
 
-    static volatile Map<Long,ScheduledFuture<?>> leaveVoice;
     public static Map<Long,ServerSettings> serverSettings;
 
     public static void main(String[] args){
