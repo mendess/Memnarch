@@ -26,7 +26,7 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 public class RoleChannels {
 
     static abstract class CRoleChannelsSub implements Command{
-        //TODO implement
+
         @Override
         public String getCommandGroup(){
             return "Role Channels";

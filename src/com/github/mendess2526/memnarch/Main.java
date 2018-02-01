@@ -44,7 +44,6 @@ public class Main {
 
         if(client!=null){
             client.getDispatcher().registerListener(new Events());
-            //TODO make restart more fun
         }else{
             log(null,"Client is null! Maybe you didn't add the token to settings.ini?", ERROR);
         }

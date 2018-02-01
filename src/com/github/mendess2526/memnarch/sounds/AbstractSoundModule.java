@@ -22,7 +22,7 @@ public abstract class AbstractSoundModule {
         GuildMusicManager musicManager = musicManagers.get(guildId);
 
         if(musicManager==null){
-            musicManager = new GuildMusicManager(playerManager);
+            musicManager = new GuildMusicManager(playerManager, guild);
             musicManagers.put(guildId,musicManager);
         }
         guild.getAudioManager().setAudioProvider(musicManager.getAudioProvider());

@@ -7,7 +7,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 public abstract class CMiscCommands implements Command {
-    //TODO implement
+
     public String getCommandGroup(){
         return "Misc Commands";
     }

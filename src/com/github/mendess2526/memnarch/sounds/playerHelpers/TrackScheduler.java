@@ -1,13 +1,19 @@
 package com.github.mendess2526.memnarch.sounds.playerHelpers;
 
+import com.github.mendess2526.memnarch.LoggerService;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import sx.blah.discord.handle.obj.IGuild;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class schedules tracks for the audio player. It contains the queue of tracks.
@@ -15,22 +21,40 @@ import java.util.List;
 public class TrackScheduler {
     private final List<AudioTrack> queue;
     private final AudioPlayer player;
+    private ScheduledFuture leaveVoice;
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
+    private final IGuild guild;
 
-    TrackScheduler(AudioPlayer player) {
+    TrackScheduler(AudioPlayer player, IGuild guild) {
         // Because we will be removing from the "head" of the queue frequently, a LinkedList is a better implementation
         // since all elements won't have to be shifted after removing. Additionally, choosing to add in between the queue
         // will similarly not cause many elements to shift and wil only require a couple of node changes.
         this.queue = Collections.synchronizedList(new LinkedList<>());
         this.player = player;
+        this.guild = guild;
 
         // For encapsulation, keep the listener anonymous.
         player.addListener(new AudioEventAdapter() {
+            @Override
+            public void onTrackStart(AudioPlayer player, AudioTrack track){
+                super.onTrackStart(player, track);
+                leaveVoice.cancel(true);
+            }
             @Override
             public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
                 // Only start the next track if the end reason is suitable for it (FINISHED or LOAD_FAILED)
                 if(endReason.mayStartNext) {
                     nextTrack();
                 }
+                if(player.getPlayingTrack() == null){
+                    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+                    Runnable leave = () ->{
+                        guild.getClient().getOurUser().getVoiceStateForGuild(guild).getChannel().leave();
+                        LoggerService.log(guild,"Leaving voice channel due to inactivity",LoggerService.INFO);
+                    };
+                    leaveVoice = executor.schedule(leave,10, TimeUnit.SECONDS);
+                }
+
             }
         });
     }
@@ -77,6 +101,7 @@ public class TrackScheduler {
     public List<AudioTrack> getQueue() {
         return this.queue;
     }
+
 
     public void pause() {
         this.player.setPaused(true);

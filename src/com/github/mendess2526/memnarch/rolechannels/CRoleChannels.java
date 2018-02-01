@@ -7,7 +7,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 public abstract class CRoleChannels implements Command {
-    //TODO implement
+
     @Override
     public String getCommandGroup(){
         return "Role Channels";

@@ -29,7 +29,7 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 public class SfxModule extends AbstractSoundModule{
 
     static abstract class CSFXModule implements Command{
-        //TODO implement
+
         @Override
         public String getCommandGroup(){
             return "Sfx";

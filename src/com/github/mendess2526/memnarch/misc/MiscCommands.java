@@ -15,7 +15,7 @@ import static com.github.mendess2526.memnarch.BotUtils.hasPermission;
 import static com.github.mendess2526.memnarch.BotUtils.sendMessage;
 
 public class MiscCommands{
-    
+
     public static void help(MessageReceivedEvent event) {
         HashMap<String,Set<String>> cmds = new HashMap<>();
         for(Map.Entry<String,Command> k : Events.commandMap.entrySet()){
