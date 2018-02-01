@@ -26,6 +26,7 @@ public class MiscTasks {
     private static final String rReactionsDateStr = "rReactionsDate";
     private static final String rEmojisStr = "rEmojis";
     private static final String rEmojisDateStr = "rEmojisDate";
+    private static String userName = "UserName";
 
     public static void rRank(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
@@ -97,6 +98,7 @@ public class MiscTasks {
             iniFile = new Wini(new File(USERS_PATH));
             Integer rReactions = iniFile.get(userID,"rReactions", Integer.class);
             if(rReactions==null) rReactions = 0;
+            iniFile.put(userID,userName,event.getUser().getName());
             iniFile.put(userID,rReactionsStr, rReactions + 1);
             iniFile.put(userID,rReactionsDateStr, LocalDate.now().format(dateForm));
             iniFile.store();
@@ -114,6 +116,7 @@ public class MiscTasks {
             iniFile = new Wini(new File(USERS_PATH));
             Integer rEmojis = iniFile.get(userID,"rEmojis",Integer.class);
             if(rEmojis==null) rEmojis = 0;
+            iniFile.put(userID,userName,event.getAuthor().getName());
             iniFile.put(userID,rEmojisStr,rEmojis+1);
             iniFile.put(userID,rEmojisDateStr, LocalDate.now().format(dateForm));
             iniFile.store();
