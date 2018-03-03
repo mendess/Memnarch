@@ -1,6 +1,7 @@
 package com.github.mendess2526.memnarch;
 
 import com.github.mendess2526.memnarch.misc.CMiscCommands;
+import com.github.mendess2526.memnarch.misc.CustomCommands;
 import com.github.mendess2526.memnarch.misc.MiscCommands;
 import com.github.mendess2526.memnarch.misc.MiscTasks;
 import com.github.mendess2526.memnarch.rolechannels.CRoleChannels;
@@ -76,7 +77,12 @@ public class Events {
                 MiscTasks.rRank(event);
             }
         });
-
+        commandMap.put("CC", new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                CustomCommands.handle(event,args);
+            }
+        });
 
         commandMap.put("ROLECHANNEL", new CRoleChannels() {
             @Override
@@ -128,6 +134,7 @@ public class Events {
     @EventSubscriber
     public void guildJoin(GuildCreateEvent event){
         Main.initialiseServerSettings(event.getGuild());
+        CustomCommands.initializeGuild(event.getGuild());
     }
     @EventSubscriber
     public void reactionEvent(ReactionAddEvent event) {
@@ -228,7 +235,9 @@ public class Events {
             Command command = commandMap.get(cmd);
             if(BotUtils.hasPermission(event,command.getPermissions(), true)) command.runCommand(event,args);
         }else{
-            log(event.getGuild(),"Invalid command: "+cmd, UERROR);
+            if(!CustomCommands.invoke(event,cmd)){
+                log(event.getGuild(),"Invalid command: "+cmd, UERROR);
+            }
         }
     }
 }

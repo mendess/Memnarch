@@ -55,6 +55,7 @@ public class Main {
         if(!users.exists() && !users.createNewFile()) throw new IOException("Couldn't create: "+users.getAbsolutePath());
     }
 
+    //TODO put this in the correct place
     static void initialiseServerSettings(IGuild guild) {
         log(guild,"Initializing settings.", INFO);
         try {
