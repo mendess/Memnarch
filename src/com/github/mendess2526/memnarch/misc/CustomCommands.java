@@ -8,6 +8,7 @@ import org.json.JSONTokener;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.Permissions;
+import sx.blah.discord.util.EmbedBuilder;
 
 import java.io.*;
 import java.util.*;
@@ -25,11 +26,6 @@ public class CustomCommands {
             return "Custom Commands";
         }
 
-        @Override
-        public Set<Permissions> getPermissions(){
-            return EnumSet.of(Permissions.MANAGE_CHANNELS);
-        }
-
     }
     private static Map<String,JSONObject> guilds = new HashMap<>();
     private static JSONObject root;
@@ -40,17 +36,39 @@ public class CustomCommands {
     static {
         commandMap.put("NEW", new CCustomCommands() {
             @Override
+            public Set<Permissions> getPermissions(){
+                return EnumSet.of(Permissions.MANAGE_CHANNELS);
+            }
+
+            @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 newCommand(event,args);
             }
         });
         commandMap.put("REMOVE", new CCustomCommands() {
             @Override
+            public Set<Permissions> getPermissions(){
+                return EnumSet.of(Permissions.MANAGE_CHANNELS);
+            }
+
+            @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 removeCommand(event,args);
             }
         });
+        commandMap.put("LIST", new CCustomCommands() {
+            @Override
+            public Set<Permissions> getPermissions(){
+                return EnumSet.noneOf(Permissions.class);
+            }
+
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                list(event);
+            }
+        });
     }
+
     private static final Set<Permissions> permissions = EnumSet.of(Permissions.MANAGE_CHANNELS);
 
     public static void initializeGuild(IGuild guild){
@@ -129,12 +147,11 @@ public class CustomCommands {
             return;
         }
         if(!guilds.containsKey(String.valueOf(event.getGuild().getLongID()))){
-            log(event.getGuild(),"Guild Costume Commands not initialized",ERROR);
+            log(event.getGuild(),"Guild Custom Commands not initialized",ERROR);
             return;
         }
         JSONObject guildCCs = guilds.get(String.valueOf(event.getGuild().getLongID()));
-        guildCCs.put(args.get(0).toUpperCase(),args.get(1));
-        log(event.getGuild(),guildCCs.toString(),INFO);
+        guildCCs.put(args.get(0).toUpperCase(),String.join(" ",args.subList(1,args.size())));
         try{
             updateJsonFile(String.valueOf(event.getGuild().getLongID()),guildCCs);
         }catch(IOException e){
@@ -144,7 +161,7 @@ public class CustomCommands {
 
     private static void removeCommand(MessageReceivedEvent event, List<String> args){
         if(!guilds.containsKey(String.valueOf(event.getGuild().getLongID()))){
-            log(event.getGuild(),"Guild Costume Commands not initialized",ERROR);
+            log(event.getGuild(),"Guild Custom Commands not initialized",ERROR);
             return;
         }
         JSONObject guildCCs = guilds.get(String.valueOf(event.getGuild().getLongID()));
@@ -166,10 +183,23 @@ public class CustomCommands {
         }
     }
 
+    private static void list(MessageReceivedEvent event){
+        if(!guilds.containsKey(String.valueOf(event.getGuild().getLongID()))){
+            log(event.getGuild(),"Guild Custom Commands not initialized",ERROR);
+            return;
+        }
+        JSONObject jsonObject = guilds.get(String.valueOf(event.getGuild().getLongID()));
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.withTitle("Custom Commands");
+        for(Object cmd: jsonObject.keySet())
+            eb.appendDesc(((String) cmd).toLowerCase());
+        sendMessage(event.getChannel(),eb.build(),-1,true);
+    }
+
     private static void updateJsonFile(String key, JSONObject jsonObject) throws IOException{
         root.put(key,jsonObject);
         FileWriter fw = new FileWriter(jsonFile);
-        fw.write(root.toString());
+        fw.write(root.toString(4));
         fw.flush();
         fw.close();
     }
