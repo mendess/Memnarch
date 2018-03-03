@@ -8,6 +8,7 @@ import java.util.Set;
 
 public abstract class CMiscCommands implements Command {
 
+    @Override
     public String getCommandGroup(){
         return "Misc Commands";
     }

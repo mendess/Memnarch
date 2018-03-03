@@ -11,35 +11,37 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.github.mendess2526.memnarch.BotUtils.USERS_PATH;
+import static com.github.mendess2526.memnarch.BotUtils.sendMessage;
+import static com.github.mendess2526.memnarch.LoggerService.INFO;
 import static com.github.mendess2526.memnarch.LoggerService.log;
-//TODO add leaderboard command
+
 public class MiscTasks {
-    @SuppressWarnings("SpellCheckingInspection")
+
+    /**
+     * The iniFile
+     */
     private static Wini iniFile;
+    /**
+     * The format of the date used to store the last R
+     */
     private static final DateTimeFormatter dateForm = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    private static final ReadWriteLock lock = new ReentrantReadWriteLock();
     private static final String rReactionsStr = "rReactions";
     private static final String rReactionsDateStr = "rReactionsDate";
     private static final String rEmojisStr = "rEmojis";
     private static final String rEmojisDateStr = "rEmojisDate";
+    private static final ReadWriteLock lock = new ReentrantReadWriteLock();
     private static String userName = "UserName";
 
     public static void rRank(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
-        lock.readLock().lock();
-        Wini iniFile;
-        try{
-            iniFile = new Wini(new File(USERS_PATH));
-        }catch(IOException e){
-            log(event.getGuild(),e,"MiscCommands.rRank");
-            return;
-        }finally{
-            lock.readLock().unlock();
-        }
+        if(iniFile == null) initFile();
         EmbedBuilder eb = new EmbedBuilder();
         if(iniFile.containsKey(userID)){
             Integer rReactions = iniFile.get(userID, rReactionsStr, Integer.class);
@@ -93,14 +95,14 @@ public class MiscTasks {
 
     public static void handleR(ReactionAddEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
-        lock.writeLock().lock();
+        if(iniFile == null) initFile();
         try{
-            iniFile = new Wini(new File(USERS_PATH));
             Integer rReactions = iniFile.get(userID,"rReactions", Integer.class);
             if(rReactions==null) rReactions = 0;
             iniFile.put(userID,userName,event.getUser().getName());
             iniFile.put(userID,rReactionsStr, rReactions + 1);
             iniFile.put(userID,rReactionsDateStr, LocalDate.now().format(dateForm));
+            lock.writeLock().lock();
             iniFile.store();
         }catch(IOException e){
             log(event.getGuild(),e,"MiscTasks.handleR(Reaction)");
@@ -111,7 +113,7 @@ public class MiscTasks {
 
     public static void handleR(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
-        lock.writeLock().lock();
+        if(iniFile == null) initFile();
         try{
             iniFile = new Wini(new File(USERS_PATH));
             Integer rEmojis = iniFile.get(userID,"rEmojis",Integer.class);
@@ -119,11 +121,62 @@ public class MiscTasks {
             iniFile.put(userID,userName,event.getAuthor().getName());
             iniFile.put(userID,rEmojisStr,rEmojis+1);
             iniFile.put(userID,rEmojisDateStr, LocalDate.now().format(dateForm));
+            lock.writeLock().lock();
             iniFile.store();
         }catch(IOException e){
             log(event.getGuild(),e,"MiscTasks.handleR(Message)");
         }finally{
             lock.writeLock().unlock();
+        }
+    }
+
+    public static void leaderBoard(MessageReceivedEvent event){
+        EmbedBuilder leaderBoard = new EmbedBuilder();
+        if(iniFile == null) initFile();
+        leaderBoard.withTitle("LeaderBoard");
+        List<RUser> rUsers = new ArrayList<>();
+        log(event.getGuild(),iniFile.keySet().toString(),INFO);
+        for(String s: iniFile.keySet()){
+            String userName = iniFile.get(s,MiscTasks.userName,String.class);
+            Integer rEmojis = iniFile.get(s,MiscTasks.rEmojisStr,Integer.class);
+            if(rEmojis == null) rEmojis = 0;
+            Integer rReactions = iniFile.get(s,MiscTasks.rReactionsStr,Integer.class);
+            if(rReactions == null) rReactions = 0;
+            rUsers.add(new RUser(userName,rEmojis,rReactions));
+        }
+        rUsers.sort(Comparator.comparingInt(RUser::score));
+        int size = rUsers.size();
+        for(int i = size-1; i>=0; i--){
+            int place = size - i;
+            leaderBoard.appendDesc(place + ": " + rUsers.get(i).userName+"\n");
+            if(place == 10) break;
+        }
+        sendMessage(event.getChannel(),leaderBoard.build(),30,true);
+    }
+
+    private static void initFile(){
+        try{
+            lock.readLock().lock();
+            iniFile = new Wini(new File(USERS_PATH));
+        }catch(IOException e){
+            log(null,e,"MiscCommands.rRank");
+        }finally{
+            lock.readLock().unlock();
+        }
+    }
+
+    private static final class RUser{
+        private final String userName;
+        private final int rEmoji;
+        private final int rReactions;
+
+        RUser(String userName, int rEmoji, int rReactions){
+            this.userName = userName;
+            this.rEmoji = rEmoji;
+            this.rReactions = rReactions;
+        }
+        int score(){
+            return this.rEmoji + this.rReactions;
         }
     }
 }

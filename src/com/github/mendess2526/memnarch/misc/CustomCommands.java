@@ -192,7 +192,7 @@ public class CustomCommands {
         EmbedBuilder eb = new EmbedBuilder();
         eb.withTitle("Custom Commands");
         for(Object cmd: jsonObject.keySet())
-            eb.appendDesc(((String) cmd).toLowerCase());
+            eb.appendDesc(((String) cmd).toLowerCase()+"\n");
         sendMessage(event.getChannel(),eb.build(),-1,true);
     }
 

@@ -77,6 +77,12 @@ public class Events {
                 MiscTasks.rRank(event);
             }
         });
+        commandMap.put("RLEADERBOARD", new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscTasks.leaderBoard(event);
+            }
+        });
         commandMap.put("CC",          new CMiscCommands() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
@@ -135,6 +141,7 @@ public class Events {
         ServerSettings.initialiseServerSettings(event.getGuild());
         CustomCommands.initializeGuild(event.getGuild());
     }
+
     @EventSubscriber
     public void reactionEvent(ReactionAddEvent event) {
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
@@ -191,6 +198,7 @@ public class Events {
             event.getUser().getOrCreatePMChannel().sendMessage(msg);
         }
     }
+
     @EventSubscriber
     public void userVoiceLeave(UserVoiceChannelLeaveEvent event){
         if(event.getVoiceChannel().getConnectedUsers().contains(event.getClient().getOurUser())
