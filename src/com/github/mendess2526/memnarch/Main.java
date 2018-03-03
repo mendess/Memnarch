@@ -1,24 +1,19 @@
 package com.github.mendess2526.memnarch;
 
-import com.github.mendess2526.memnarch.serversettings.ServerSettings;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.util.DiscordException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.github.mendess2526.memnarch.BotUtils.SERVERS_PATH;
 import static com.github.mendess2526.memnarch.BotUtils.USERS_PATH;
-import static com.github.mendess2526.memnarch.LoggerService.*;
+import static com.github.mendess2526.memnarch.LoggerService.ERROR;
+import static com.github.mendess2526.memnarch.LoggerService.log;
 
 
 public class Main {
-
-    public static Map<Long,ServerSettings> serverSettings;
 
     public static void main(String[] args){
         try{
@@ -36,7 +31,6 @@ public class Main {
         }
 
         String token = cfg.getToken();
-        serverSettings = new HashMap<>();
 
         IDiscordClient client = createClient (token);
 
@@ -53,17 +47,6 @@ public class Main {
         File users = new File(USERS_PATH);
         if(!servers.exists() && !servers.createNewFile()) throw new IOException("Couldn't create: "+servers.getAbsolutePath());
         if(!users.exists() && !users.createNewFile()) throw new IOException("Couldn't create: "+users.getAbsolutePath());
-    }
-
-    //TODO put this in the correct place
-    static void initialiseServerSettings(IGuild guild) {
-        log(guild,"Initializing settings.", INFO);
-        try {
-            serverSettings.put(guild.getLongID(), new ServerSettings(guild));
-            log(guild,"Server settings initialized",SUCC);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private static IDiscordClient createClient(String token){

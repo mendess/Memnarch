@@ -31,7 +31,7 @@ public class CustomCommands {
     private static JSONObject root;
     private static File jsonFile;
 
-    private static final String CUSTOM_COMMANDS_FILE = BotUtils.DEFAULT_FILE_PATH+"costumeCommands.json";
+    private static final String CUSTOM_COMMANDS_FILE = BotUtils.DEFAULT_FILE_PATH+"customCommands.json";
     private static final Map<String,Command> commandMap = new HashMap<>();
     static {
         commandMap.put("NEW", new CCustomCommands() {

@@ -1,7 +1,6 @@
 package com.github.mendess2526.memnarch.serversettings;
 
 import com.github.mendess2526.memnarch.Command;
-import com.github.mendess2526.memnarch.Main;
 import org.ini4j.Wini;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IGuild;
@@ -21,6 +20,7 @@ import static com.github.mendess2526.memnarch.LoggerService.*;
 
 public class ServerSettings {
     // Class Variables
+    private static Map<Long,ServerSettings> serverSettings = new HashMap<>();
     private static final Map<String,Command> commandMap = new HashMap<>();
     static {
         commandMap.put("WELCOMEMSG",    new CServerSettings() {
@@ -70,22 +70,40 @@ public class ServerSettings {
     }
 
     private static void setMessagesNewUsers(MessageReceivedEvent event){
-        Main.serverSettings.get(event.getGuild().getLongID()).iSetMessagesNewUsers(event);
+        serverSettings.get(event.getGuild().getLongID()).iSetMessagesNewUsers(event);
     }
 
     private static void setWelcomeMessage(MessageReceivedEvent event, List<String> args){
         List<String> msg = Arrays.asList(event.getMessage().getContent().split("\\s")).subList(2,args.size()+2);
-        Main.serverSettings.get(event.getGuild().getLongID())
+        serverSettings.get(event.getGuild().getLongID())
                 .iSetWelcomeMessage(String.join(" ",msg));
         sendMessage(event.getChannel(),"Message set!",120,false);
     }
 
     private static void setAllowsGreetings(MessageReceivedEvent event){
-        Main.serverSettings.get(event.getGuild().getLongID()).iSetAllowsGreetings(event);
+        serverSettings.get(event.getGuild().getLongID()).iSetAllowsGreetings(event);
     }
 
     private static void showServerSettings(MessageReceivedEvent event){
-        Main.serverSettings.get(event.getGuild().getLongID()).iShowServerSettings(event);
+        serverSettings.get(event.getGuild().getLongID()).iShowServerSettings(event);
+    }
+
+    public static void initialiseServerSettings(IGuild guild) {
+        log(guild,"Initializing settings.", INFO);
+        try {
+            serverSettings.put(guild.getLongID(), new ServerSettings(guild));
+            log(guild,"Server settings initialized",SUCC);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean messagesNewUsers(IGuild guild){
+        return serverSettings.get(guild.getLongID()).messagesNewUsers();
+    }
+
+    public static String getNewUserMessage(IGuild guild){
+        return serverSettings.get(guild.getLongID()).getNewUserMessage();
     }
 
     /*----------------------------------------------------------------------------------------------*/
@@ -95,7 +113,7 @@ public class ServerSettings {
     private ReadWriteLock lock;
     private Wini iniFile;
 
-    public ServerSettings(IGuild guild) throws IOException {
+    private ServerSettings(IGuild guild) throws IOException {
         this.id=Long.toString(guild.getLongID());
         this.guild=guild;
         this.lock = new ReentrantReadWriteLock();
@@ -115,15 +133,11 @@ public class ServerSettings {
     }
 
     // Instance Methods
-    public boolean messagesNewUsers() {
+    private boolean messagesNewUsers() {
         return iniFile.get(this.id,"Messages new users",boolean.class);
     }
 
-    public boolean allowsGreetings() {
-        return iniFile.get(this.id,"Allows Greetings",boolean.class);
-    }
-
-    public String getNewUserMessage() {
+    private String getNewUserMessage() {
         return iniFile.get(this.id,"New User Message",String.class);
     }
 

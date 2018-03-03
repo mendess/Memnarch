@@ -51,7 +51,8 @@ public class RoleChannels {
     public static final String TITLE_CH_QUERY_L = "Select the channel you want to leave!";
     public static final String TITLE_CT_QUERY_J = "Select the category you want to join!";
     public static final String TITLE_CT_QUERY_L = "Select the category you want to leave!";
-    private static final String[] TITLE_EMPTY_CHLIST = {"No more channels to join. You're EVERYWHERE!", "No more channels to leave."};
+    private static final String[] TITLE_EMPTY_CHLIST = {"No more channels to join. You're EVERYWHERE!",
+                                                        "No more channels to leave."};
     private static final String[] TITLE_INIT_QUERY = {TITLE_INIT_QUERY_J,TITLE_INIT_QUERY_L};
     private static final String[] TITLE_CH_QUERY = {TITLE_CH_QUERY_J,TITLE_CH_QUERY_L};
     private static final String[] TITLE_CT_QUERY = {TITLE_CT_QUERY_J,TITLE_CT_QUERY_L};

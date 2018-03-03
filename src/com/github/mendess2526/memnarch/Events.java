@@ -77,7 +77,7 @@ public class Events {
                 MiscTasks.rRank(event);
             }
         });
-        commandMap.put("CC", new CMiscCommands() {
+        commandMap.put("CC",          new CMiscCommands() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
                 CustomCommands.handle(event,args);
@@ -107,7 +107,6 @@ public class Events {
             }
         });
 
-
         commandMap.put("SFX",         new CSounds() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){
@@ -133,7 +132,7 @@ public class Events {
 
     @EventSubscriber
     public void guildJoin(GuildCreateEvent event){
-        Main.initialiseServerSettings(event.getGuild());
+        ServerSettings.initialiseServerSettings(event.getGuild());
         CustomCommands.initializeGuild(event.getGuild());
     }
     @EventSubscriber
@@ -187,8 +186,8 @@ public class Events {
 
     @EventSubscriber
     public void userGuildJoin(UserJoinEvent event){
-        if(Main.serverSettings.get(event.getGuild().getLongID()).messagesNewUsers()){
-            String msg = Main.serverSettings.get(event.getGuild().getLongID()).getNewUserMessage();
+        if(ServerSettings.messagesNewUsers(event.getGuild())){
+            String msg = ServerSettings.getNewUserMessage(event.getGuild());
             event.getUser().getOrCreatePMChannel().sendMessage(msg);
         }
     }
