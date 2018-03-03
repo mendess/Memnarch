@@ -28,3 +28,4 @@ target/
 files/
 
 *Test.java
+/src/com/github/mendess2526/memnarch/LoggerFilter.java

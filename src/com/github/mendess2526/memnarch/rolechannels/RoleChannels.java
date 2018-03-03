@@ -147,11 +147,8 @@ public class RoleChannels {
         ch = RequestBuffer.request(() -> {
             try{
                 return guild.createChannel(name);
-            }catch (MissingPermissionsException e) {
-                log(event.getGuild(), "Couldn't create channel. Missing Permissions: " + e.getMissingPermissions(), ERROR);
-                return null;
-            }catch (DiscordException e){
-                log(event.getGuild(),"Couldn't create channel. Error Message: "+e.getErrorMessage(), ERROR);
+            }catch (MissingPermissionsException | DiscordException e) {
+                log(event.getGuild(),e);
                 return null;
             }
         }).get();
@@ -475,7 +472,7 @@ public class RoleChannels {
                         try {
                             TimeUnit.SECONDS.sleep(3);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            log(event.getGuild(),e);
                         }
                         size = chList.size()+1;
                     }else{ size = chList.size();}
@@ -716,7 +713,7 @@ public class RoleChannels {
         }catch (NullPointerException e){
             log(msg.getGuild(),"Tried to remove a non-existent reaction", ERROR);
         }catch (Exception e){
-            log(msg.getGuild(),e.getClass().getCanonicalName()+":"+e.getMessage(), ERROR);
+            log(msg.getGuild(),e);
         }
     }
 }

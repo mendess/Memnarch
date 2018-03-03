@@ -94,7 +94,7 @@ public class ServerSettings {
             serverSettings.put(guild.getLongID(), new ServerSettings(guild));
             log(guild,"Server settings initialized",SUCC);
         } catch (IOException e) {
-            e.printStackTrace();
+            log(guild,e);
         }
     }
 
@@ -186,7 +186,7 @@ public class ServerSettings {
             lock.writeLock().lock();
             iniFile.store();
         }catch (IOException e){
-            log(guild,"Couldn't update server settings", ERROR);
+            log(guild,e);
         }finally {
             lock.writeLock().unlock();
         }

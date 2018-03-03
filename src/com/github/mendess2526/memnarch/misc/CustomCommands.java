@@ -87,7 +87,7 @@ public class CustomCommands {
                     }
                 }
             }catch(IOException e){
-                log(guild,e,"CustomCommands#initializeGuild");
+                log(guild,e);
                 return;
             }
         }
@@ -95,7 +95,7 @@ public class CustomCommands {
             try{
                 root = new JSONObject(new JSONTokener(new FileReader(jsonFile)));
             }catch(FileNotFoundException e){
-                log(guild,e,"CustomCommands#initializeGuild");
+                log(guild,e);
                 return;
             }catch(JSONException e){
                 root = new JSONObject(new JSONTokener("{}"));
@@ -155,7 +155,7 @@ public class CustomCommands {
         try{
             updateJsonFile(String.valueOf(event.getGuild().getLongID()),guildCCs);
         }catch(IOException e){
-            log(event.getGuild(),e,"CustomCommands#newCommand");
+            log(event.getGuild(),e);
         }
     }
 
@@ -175,7 +175,7 @@ public class CustomCommands {
                     updateJsonFile(String.valueOf(event.getGuild().getLongID()),guildCCs);
                     sendMessage(event.getChannel(),"Command "+key+" -> "+value+" removed",-1,true);
                 }catch(IOException e){
-                    log(event.getGuild(),e,"CustomCommands#removeCommand");
+                    log(event.getGuild(),e);
                 }
             }else{
                 sendMessage(event.getChannel(),"No such command",30,false);

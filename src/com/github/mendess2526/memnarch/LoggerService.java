@@ -3,10 +3,7 @@ package com.github.mendess2526.memnarch;
 
 import sx.blah.discord.handle.obj.IGuild;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -46,14 +43,12 @@ public class LoggerService {
         logToFile(message);
     }
 
-    public static void log(IGuild guild, Exception e, String method){
-        log(guild,e.getClass().getCanonicalName()+" in "+method+": "+e.getMessage(), ERROR);
-        StringBuilder stackTrace = new StringBuilder();
-        StackTraceElement[] ste = e.getStackTrace();
-        for(StackTraceElement aSte : ste){
-            stackTrace.append(aSte.toString()).append("\n");
-        }
-        logToFile(stackTrace.toString());
+    public static void log(IGuild guild, Exception e){
+        String methodName = Thread.currentThread().getStackTrace()[2].getMethodName();
+        log(guild,e.getClass().getCanonicalName()+" in "+methodName+": "+e.getMessage(), ERROR);
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        logToFile(sw.toString());
     }
 
     private static void logToFile(String message){

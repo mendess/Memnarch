@@ -4,6 +4,7 @@ import com.github.mendess2526.memnarch.BotUtils;
 import org.ini4j.Wini;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
@@ -41,7 +42,7 @@ public class MiscTasks {
 
     public static void rRank(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
-        if(iniFile == null) initFile();
+        if(iniFile == null) initFile(event.getGuild());
         EmbedBuilder eb = new EmbedBuilder();
         if(iniFile.containsKey(userID)){
             Integer rReactions = iniFile.get(userID, rReactionsStr, Integer.class);
@@ -95,29 +96,29 @@ public class MiscTasks {
 
     public static void handleR(ReactionAddEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
-        if(iniFile == null) initFile();
+        if(iniFile == null) initFile(event.getGuild());
         Integer rReactions = iniFile.get(userID,"rReactions", Integer.class);
         if(rReactions==null) rReactions = 0;
         iniFile.put(userID,userName,event.getUser().getName());
         iniFile.put(userID,rReactionsStr, rReactions + 1);
         iniFile.put(userID,rReactionsDateStr, LocalDate.now().format(dateForm));
-        updateFile();
+        updateFile(event.getGuild());
     }
 
     public static void handleR(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
-        if(iniFile == null) initFile();
+        if(iniFile == null) initFile(event.getGuild());
         Integer rEmojis = iniFile.get(userID,"rEmojis",Integer.class);
         if(rEmojis==null) rEmojis = 0;
         iniFile.put(userID,userName,event.getAuthor().getName());
         iniFile.put(userID,rEmojisStr,rEmojis+1);
         iniFile.put(userID,rEmojisDateStr, LocalDate.now().format(dateForm));
-        updateFile();
+        updateFile(event.getGuild());
     }
 
     public static void leaderBoard(MessageReceivedEvent event){
         EmbedBuilder leaderBoard = new EmbedBuilder();
-        if(iniFile == null) initFile();
+        if(iniFile == null) initFile(event.getGuild());
         leaderBoard.withTitle("LeaderBoard");
         List<RUser> rUsers = new ArrayList<>();
         for(String s: iniFile.keySet()){
@@ -139,7 +140,7 @@ public class MiscTasks {
     }
 
     public static void refreshUserNames(MessageReceivedEvent event){
-        if(iniFile == null) initFile();
+        if(iniFile == null) initFile(event.getGuild());
         if(!event.getAuthor().equals(event.getClient().getApplicationOwner())){
             sendMessage(event.getChannel(),"Only the owner of the bot can use that command",120,false);
             return;
@@ -150,26 +151,26 @@ public class MiscTasks {
             String name = user.getName();
             iniFile.put(s,userName,name);
         }
-        updateFile();
+        updateFile(event.getGuild());
     }
 
-    private static void initFile(){
+    private static void initFile(IGuild guild){
         try{
             lock.readLock().lock();
             iniFile = new Wini(new File(USERS_PATH));
         }catch(IOException e){
-            log(null,e,"MiscCommands.rRank");
+            log(guild,e);
         }finally{
             lock.readLock().unlock();
         }
     }
 
-    private static void updateFile(){
+    private static void updateFile(IGuild guild){
         try{
             lock.writeLock().lock();
             iniFile.store();
         }catch(IOException e){
-            log(null,e,"MiscTasks.handleR(Message)");
+            log(guild,e);
         }finally{
             lock.writeLock().unlock();
         }

@@ -12,6 +12,7 @@ import static com.github.mendess2526.memnarch.BotUtils.USERS_PATH;
 import static com.github.mendess2526.memnarch.LoggerService.ERROR;
 import static com.github.mendess2526.memnarch.LoggerService.log;
 
+//TODO check catch blocks for logging
 
 public class Main {
 
