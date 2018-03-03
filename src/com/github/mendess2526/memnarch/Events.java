@@ -83,6 +83,18 @@ public class Events {
                 MiscTasks.leaderBoard(event);
             }
         });
+        commandMap.put("RREFRESHNAMES", new CMiscCommands() {
+            @Override
+            public Set<Permissions> getPermissions(){
+                Set<Permissions> s = super.getPermissions();
+                s.add(Permissions.ADMINISTRATOR);
+                return s;
+            }
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscTasks.refreshUserNames(event);
+            }
+        });
         commandMap.put("CC",          new CMiscCommands() {
             @Override
             public void runCommand(MessageReceivedEvent event, List<String> args){

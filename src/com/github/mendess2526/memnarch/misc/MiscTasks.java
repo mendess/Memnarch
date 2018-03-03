@@ -4,6 +4,7 @@ import com.github.mendess2526.memnarch.BotUtils;
 import org.ini4j.Wini;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
+import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
 import java.io.File;
@@ -19,7 +20,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.github.mendess2526.memnarch.BotUtils.USERS_PATH;
 import static com.github.mendess2526.memnarch.BotUtils.sendMessage;
-import static com.github.mendess2526.memnarch.LoggerService.INFO;
 import static com.github.mendess2526.memnarch.LoggerService.log;
 
 public class MiscTasks {
@@ -96,38 +96,23 @@ public class MiscTasks {
     public static void handleR(ReactionAddEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
         if(iniFile == null) initFile();
-        try{
-            Integer rReactions = iniFile.get(userID,"rReactions", Integer.class);
-            if(rReactions==null) rReactions = 0;
-            iniFile.put(userID,userName,event.getUser().getName());
-            iniFile.put(userID,rReactionsStr, rReactions + 1);
-            iniFile.put(userID,rReactionsDateStr, LocalDate.now().format(dateForm));
-            lock.writeLock().lock();
-            iniFile.store();
-        }catch(IOException e){
-            log(event.getGuild(),e,"MiscTasks.handleR(Reaction)");
-        }finally{
-            lock.writeLock().unlock();
-        }
+        Integer rReactions = iniFile.get(userID,"rReactions", Integer.class);
+        if(rReactions==null) rReactions = 0;
+        iniFile.put(userID,userName,event.getUser().getName());
+        iniFile.put(userID,rReactionsStr, rReactions + 1);
+        iniFile.put(userID,rReactionsDateStr, LocalDate.now().format(dateForm));
+        updateFile();
     }
 
     public static void handleR(MessageReceivedEvent event){
         String userID = Long.toString(event.getAuthor().getLongID());
         if(iniFile == null) initFile();
-        try{
-            iniFile = new Wini(new File(USERS_PATH));
-            Integer rEmojis = iniFile.get(userID,"rEmojis",Integer.class);
-            if(rEmojis==null) rEmojis = 0;
-            iniFile.put(userID,userName,event.getAuthor().getName());
-            iniFile.put(userID,rEmojisStr,rEmojis+1);
-            iniFile.put(userID,rEmojisDateStr, LocalDate.now().format(dateForm));
-            lock.writeLock().lock();
-            iniFile.store();
-        }catch(IOException e){
-            log(event.getGuild(),e,"MiscTasks.handleR(Message)");
-        }finally{
-            lock.writeLock().unlock();
-        }
+        Integer rEmojis = iniFile.get(userID,"rEmojis",Integer.class);
+        if(rEmojis==null) rEmojis = 0;
+        iniFile.put(userID,userName,event.getAuthor().getName());
+        iniFile.put(userID,rEmojisStr,rEmojis+1);
+        iniFile.put(userID,rEmojisDateStr, LocalDate.now().format(dateForm));
+        updateFile();
     }
 
     public static void leaderBoard(MessageReceivedEvent event){
@@ -135,7 +120,6 @@ public class MiscTasks {
         if(iniFile == null) initFile();
         leaderBoard.withTitle("LeaderBoard");
         List<RUser> rUsers = new ArrayList<>();
-        log(event.getGuild(),iniFile.keySet().toString(),INFO);
         for(String s: iniFile.keySet()){
             String userName = iniFile.get(s,MiscTasks.userName,String.class);
             Integer rEmojis = iniFile.get(s,MiscTasks.rEmojisStr,Integer.class);
@@ -154,6 +138,21 @@ public class MiscTasks {
         sendMessage(event.getChannel(),leaderBoard.build(),30,true);
     }
 
+    public static void refreshUserNames(MessageReceivedEvent event){
+        if(iniFile == null) initFile();
+        if(!event.getAuthor().equals(event.getClient().getApplicationOwner())){
+            sendMessage(event.getChannel(),"Only the owner of the bot can use that command",120,false);
+            return;
+        }
+        for(String s: iniFile.keySet()){
+            IUser user = event.getClient().getUserByID(Long.parseLong(s));
+            if(user == null) continue;
+            String name = user.getName();
+            iniFile.put(s,userName,name);
+        }
+        updateFile();
+    }
+
     private static void initFile(){
         try{
             lock.readLock().lock();
@@ -165,16 +164,28 @@ public class MiscTasks {
         }
     }
 
+    private static void updateFile(){
+        try{
+            lock.writeLock().lock();
+            iniFile.store();
+        }catch(IOException e){
+            log(null,e,"MiscTasks.handleR(Message)");
+        }finally{
+            lock.writeLock().unlock();
+        }
+    }
+
     private static final class RUser{
         private final String userName;
         private final int rEmoji;
-        private final int rReactions;
 
+        private final int rReactions;
         RUser(String userName, int rEmoji, int rReactions){
             this.userName = userName;
             this.rEmoji = rEmoji;
             this.rReactions = rReactions;
         }
+
         int score(){
             return this.rEmoji + this.rReactions;
         }
