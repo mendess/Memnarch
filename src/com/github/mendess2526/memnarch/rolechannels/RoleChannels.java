@@ -45,6 +45,7 @@ public class RoleChannels {
     private static final String ONE = "1⃣", TWO = "2⃣", THREE = "3⃣", FOUR = "4⃣", FIVE = "5⃣", SIX = "6⃣";
     private static final String[] NUMBERS = {ONE,TWO,THREE,FOUR,FIVE,SIX};
 
+    private static final String USAGE_INSTRUCTION = "_(click the emoji to choose)_ \n";
     public static final String TITLE_INIT_QUERY_J = "Do you want to join a category or individual channels?";
     public static final String TITLE_INIT_QUERY_L = "Do you want to leave a category or individual channels?";
     public static final String TITLE_CH_QUERY_J = "Select the channel you want to join!";
@@ -409,6 +410,7 @@ public class RoleChannels {
             return e.build();
         }
         e.withTitle(TITLE_INIT_QUERY[joining? 0 : 1]);
+        e.appendDesc(USAGE_INSTRUCTION);
         e.appendDesc("**1:** Categories\n");
         e.appendDesc("**2:** SingleChannels\n");
         return e.build();
@@ -522,6 +524,7 @@ public class RoleChannels {
         List<IChannel> page = chList.subList(from,to);
 
         e.withTitle(TITLE_CH_QUERY[mode]);
+        e.appendDesc(USAGE_INSTRUCTION);
         // Print the list to the Embed
         for(IChannel c : page){
             e.appendDesc("**"+count+":** "+ c.getName()+"\n");
@@ -623,6 +626,7 @@ public class RoleChannels {
         List<ICategory> page = ctList.subList(from,to);
 
         e.withTitle(TITLE_CT_QUERY[mode]);
+        e.appendDesc(USAGE_INSTRUCTION);
         // Print the list to the Embed
         for(ICategory c : page){
             e.appendDesc("**"+count+":** "+ c.getName()+"\n");
