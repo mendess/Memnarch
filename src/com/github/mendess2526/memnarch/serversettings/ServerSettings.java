@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import static com.github.mendess2526.memnarch.BotUtils.*;
 import static com.github.mendess2526.memnarch.LoggerService.*;
 
-
+//TODO Inifile and lock should be stat
 public class ServerSettings {
     // Class Variables
     private static Map<Long,ServerSettings> serverSettings = new HashMap<>();
