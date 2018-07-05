@@ -36,6 +36,7 @@ public class RoleChannels {
         public Set<Permissions> getPermissions(){
             return EnumSet.of(Permissions.MANAGE_CHANNELS);
         }
+
     }
     private static final int JOIN = 0;
     private static final int LEAVE = 1;
@@ -46,12 +47,14 @@ public class RoleChannels {
     private static final String[] NUMBERS = {ONE,TWO,THREE,FOUR,FIVE,SIX};
 
     private static final String USAGE_INSTRUCTION = "_(click the emoji to choose)_ \n";
+    private static final String USAGE_INSTRUCTION_PERM = "Type the channel name into de chat";
     public static final String TITLE_INIT_QUERY_J = "Do you want to join a category or individual channels?";
     public static final String TITLE_INIT_QUERY_L = "Do you want to leave a category or individual channels?";
     public static final String TITLE_CH_QUERY_J = "Select the channel you want to join!";
     public static final String TITLE_CH_QUERY_L = "Select the channel you want to leave!";
     public static final String TITLE_CT_QUERY_J = "Select the category you want to join!";
     public static final String TITLE_CT_QUERY_L = "Select the category you want to leave!";
+    public static final String TITLE_CH_PERM    = "Select the channel you want to join or leave";
     private static final String[] TITLE_EMPTY_CHLIST = {"No more channels to join. You're EVERYWHERE!",
                                                         "No more channels to leave."};
     private static final String[] TITLE_INIT_QUERY = {TITLE_INIT_QUERY_J,TITLE_INIT_QUERY_L};
@@ -106,9 +109,16 @@ public class RoleChannels {
                 convert(event,args);
             }
         });
+        // Create permanent channel form
+        commandMap.put("PERM", new CRoleChannelsSub() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                createPermanentForm(event);
+            }
+        });
     }
 
-    
+
     // Managing Channels
     public static void handle(MessageReceivedEvent event, List<String> args){
         if(hasPermission(event,permissions, true)) {
@@ -646,6 +656,7 @@ public class RoleChannels {
     }
 
     // Misc
+
     private static void listReact(IMessage msg, int size){
         if(size>6){
             RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ARROW_BACK))).get();
@@ -698,6 +709,7 @@ public class RoleChannels {
     private static Predicate<IChannel> privateChannelFilter(boolean joinable, IUser user){
         return (c -> (c.getTopic() != null && c.getTopic().startsWith(PRIVATE_MARKER) && joinable != c.getModifiedPermissions(user).contains(Permissions.READ_MESSAGES)));
     }
+
     //TODO For some reason getReactions is not getting an updated reaction
     public static void cutSuperfluousReactions(IMessage message, int size) {
         List<String> rList = message.getReactions().stream().map(r -> r.getEmoji().getName()).collect(Collectors.toList());
@@ -719,5 +731,24 @@ public class RoleChannels {
         }catch (Exception e){
             log(msg.getGuild(),e);
         }
+    }
+
+    private static void createPermanentForm(MessageReceivedEvent event){
+        List<IChannel> chList = getAllChannels(event.getGuild());
+        EmbedBuilder e = new EmbedBuilder();
+        e.withTitle(TITLE_CH_QUERY[0]);
+        e.appendDesc(USAGE_INSTRUCTION_PERM);
+        // Print the list to the Embed
+        int count = 1;
+        for(IChannel c : chList){
+            e.appendDesc("**"+count+":** "+ c.getName()+"\n");
+            count++;
+        }
+        sendMessage(event.getChannel(),e.build(),-1,false);
+        RequestBuffer.request(() -> event.getMessage().delete());
+    }
+
+    private static List<IChannel> getAllChannels(IGuild guild){
+        return guild.getChannels();
     }
 }
