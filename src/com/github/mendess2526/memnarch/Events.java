@@ -58,6 +58,12 @@ public class Events {
                 MiscCommands.whoAreYou(event);
             }
         });
+        commandMap.put("INTERRAIL",   new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscCommands.postInterrailLink(event);
+            }
+        });
         commandMap.put("SHUTDOWN",    new CMiscCommands() {
             @Override
             public Set<Permissions> getPermissions(){
@@ -155,7 +161,7 @@ public class Events {
     }
 
     @EventSubscriber
-    public void reactionEvent(ReactionAddEvent event) {
+    public void reactionEvent(ReactionAddEvent event){
         // If it wasn't the bot adding the reaction and it was a reaction added my the bot
         if(event.getReaction().getUserReacted(event.getClient().getOurUser()) &&
                 !(event.getUser().equals(event.getClient().getOurUser()))){

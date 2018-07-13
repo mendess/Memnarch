@@ -3,16 +3,25 @@ package com.github.mendess2526.memnarch.misc;
 import com.github.mendess2526.memnarch.BotUtils;
 import com.github.mendess2526.memnarch.Command;
 import com.github.mendess2526.memnarch.Events;
+import org.json.JSONObject;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.util.EmbedBuilder;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static com.github.mendess2526.memnarch.BotUtils.hasPermission;
 import static com.github.mendess2526.memnarch.BotUtils.sendMessage;
+import static com.github.mendess2526.memnarch.LoggerService.log;
 
 public class MiscCommands{
 
@@ -60,5 +69,22 @@ public class MiscCommands{
                                   .withImage("http://magiccards.info/scans/en/arc/112.jpg")
                                   .withDesc("Sauce code: [GitHub](https://github.com/Mendess2526/Memnarch)")
                                   .build(),-1,true);
+    }
+
+    public static void postInterrailLink(MessageReceivedEvent event){
+        if(event.getGuild().getLongID() == 136220994812641280L){
+            try{
+                URL url = new URL("localhost:4040/api/tunnels");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"));
+                StringBuilder sb = new StringBuilder();
+                for(String line; (line = reader.readLine()) != null;){
+                    sb.append(line);
+                }
+                JSONObject jobj = new JSONObject(sb.toString());
+                BotUtils.sendMessage(event.getChannel(),jobj.getJSONArray("tunnels").getJSONObject(1).getString("public_url"), 30, true);
+            }catch(IOException e){
+                log(event.getGuild(), e);
+            }
+        }
     }
 }
