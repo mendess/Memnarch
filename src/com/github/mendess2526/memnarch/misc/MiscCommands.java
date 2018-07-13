@@ -74,7 +74,7 @@ public class MiscCommands{
     public static void postInterrailLink(MessageReceivedEvent event){
         if(event.getGuild().getLongID() == 136220994812641280L){
             try{
-                URL url = new URL("localhost:4040/api/tunnels");
+                URL url = new URL("https://localhost:4040/api/tunnels");
                 BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"));
                 StringBuilder sb = new StringBuilder();
                 for(String line; (line = reader.readLine()) != null;){
