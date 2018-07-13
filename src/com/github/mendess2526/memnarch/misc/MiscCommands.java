@@ -84,6 +84,7 @@ public class MiscCommands{
                 BotUtils.sendMessage(event.getChannel(),jobj.getJSONArray("tunnels").getJSONObject(1).getString("public_url"), 30, true);
             }catch(IOException e){
                 log(event.getGuild(), e);
+                BotUtils.sendMessage(event.getChannel(), "Something went wrong...", 30, true);
             }
         }
     }
