@@ -37,6 +37,9 @@ public class BotUtils {
     public static final String DEFAULT_FILE_PATH = "files/";
     public static final String USERS_PATH = DEFAULT_FILE_PATH+"users.ini";
     public static final String SERVERS_PATH = DEFAULT_FILE_PATH+"servers.ini";
+    public static final String ZERO = "0⃣", ONE = "1⃣", TWO = "2⃣", THREE = "3⃣", FOUR = "4⃣", FIVE = "5⃣", SIX = "6⃣",
+                               SEVEN = "7⃣", EIGHT = "8⃣", NINE = "9⃣", A = "\uD83C\uDD70", B = "\uD83C\uDD71";
+    public static final String[] NUMBERS = {ZERO,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,A,B};
 
     private static void autoDelete(IMessage msg, IDiscordClient client, int delay) {
         Thread t = new Thread(() -> {

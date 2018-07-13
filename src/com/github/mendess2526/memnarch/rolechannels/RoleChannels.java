@@ -42,8 +42,6 @@ public class RoleChannels {
     // UNICODE
     private static final String ARROW_BACK = "\u2B05";
     private static final String ARROW_FORW = "\u27A1";
-    private static final String ONE = "1⃣", TWO = "2⃣", THREE = "3⃣", FOUR = "4⃣", FIVE = "5⃣", SIX = "6⃣";
-    private static final String[] NUMBERS = {ONE,TWO,THREE,FOUR,FIVE,SIX};
 
     private static final String USAGE_INSTRUCTION = "_(click the emoji to choose)_ \n";
     public static final String TITLE_INIT_QUERY_J = "Do you want to join a category or individual channels?";

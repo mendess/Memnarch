@@ -6,7 +6,10 @@ import com.github.mendess2526.memnarch.Events;
 import org.json.JSONObject;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.impl.obj.ReactionEmoji;
+import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.EmbedBuilder;
+import sx.blah.discord.util.RequestBuffer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,11 +17,9 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import static com.github.mendess2526.memnarch.BotUtils.NUMBERS;
 import static com.github.mendess2526.memnarch.BotUtils.hasPermission;
 import static com.github.mendess2526.memnarch.BotUtils.sendMessage;
 import static com.github.mendess2526.memnarch.LoggerService.log;
@@ -86,6 +87,25 @@ public class MiscCommands{
                 log(event.getGuild(), e);
                 BotUtils.sendMessage(event.getChannel(), "Something went wrong...", 30, true);
             }
+        }
+    }
+
+    public static void vote(MessageReceivedEvent event, List<String> args){
+        StringTokenizer stringTokenizer = new StringTokenizer(args.stream().reduce("", (s, s2) -> s + " " + s2),";");
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.withTitle("Vote:");
+        int i = 0;
+        while(i < NUMBERS.length && stringTokenizer.hasMoreTokens()){
+            eb.appendField(stringTokenizer.nextToken(), NUMBERS[i++], true);
+        }
+        if(stringTokenizer.hasMoreTokens()){
+            sendMessage(event.getChannel(), "Too many options :(", 30, true);
+            return;
+        }
+        IMessage msg = sendMessage(event.getChannel(), eb.build(), - 1, false);
+        for(int j = 0; j < i; j++){
+            int finalJ = j;
+            RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(NUMBERS[finalJ]))).get();
         }
     }
 }

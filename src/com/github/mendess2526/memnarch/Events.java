@@ -64,6 +64,12 @@ public class Events {
                 MiscCommands.postInterrailLink(event);
             }
         });
+        commandMap.put("VOTE", new CMiscCommands() {
+            @Override
+            public void runCommand(MessageReceivedEvent event, List<String> args){
+                MiscCommands.vote(event, args);
+            }
+        });
         commandMap.put("SHUTDOWN",    new CMiscCommands() {
             @Override
             public Set<Permissions> getPermissions(){
