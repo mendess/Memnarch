@@ -647,13 +647,13 @@ public class RoleChannels {
     private static void listReact(IMessage msg, int size){
         if(size>6){
             RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ARROW_BACK))).get();
-            for(int i=0;i<6;i++){
+            for(int i=1;i<7;i++){
                 int finalI = i;
                 RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(NUMBERS[finalI]))).get();
             }
             RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(ARROW_FORW))).get();
         }else{
-            for(int i=0;i<size;i++){
+            for(int i=1;i<size+1;i++){
                 int finalI = i;
                 RequestBuffer.request(() -> msg.addReaction(ReactionEmoji.of(NUMBERS[finalI]))).get();
             }
